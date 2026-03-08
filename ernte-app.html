@@ -88,6 +88,18 @@
   /* ── Chip scrollers ── */
   .chip-scroll { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
   .chip-scroll::-webkit-scrollbar { display:none; }
+
+  /* ── Pflücker search ── */
+  .pfluecker-wrap { display:flex; flex-direction:column; gap:8px; }
+  .pfluecker-search {
+    background:var(--mittel); border:1.5px solid var(--border); border-radius:10px;
+    padding:9px 14px; color:var(--text); font-size:14px; font-family:'Syne',sans-serif;
+    width:100%; outline:none;
+  }
+  .pfluecker-search:focus { border-color:var(--rot); }
+  .pfluecker-search::placeholder { color:var(--text-dim); }
+  .chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
+  .sublabel { font-size:10px; letter-spacing:1px; color:var(--text-dim); font-weight:700; text-transform:uppercase; margin-bottom:5px; }
   .chip {
     flex-shrink:0; background:var(--mittel); border:1.5px solid var(--border);
     border-radius:24px; padding:7px 14px; font-size:13px; font-weight:600;
@@ -213,7 +225,7 @@
   .hour-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
   .hour-bar { width:100%; background:rgba(255,255,255,.05); border-radius:3px 3px 0 0; min-height:2px; transition:height .4s ease; }
   .hour-bar.has { background:var(--rot); }
-  .hour-tick { font-size:9px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+  .hour-tick { font-size:8px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
   .hour-labels { display:flex; justify-content:space-between; padding:3px 0 0; font-size:9px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
 
   /* ── Toast ── */
@@ -397,7 +409,14 @@
   </div>
   <div class="section">
     <div class="section-title">👤 Pflücker</div>
-    <div class="chip-scroll" id="pfluckerList"></div>
+    <div class="pfluecker-wrap">
+      <div id="pfluckerHeuteSection" style="display:none">
+        <div class="sublabel">Heute aktiv</div>
+        <div class="chip-scroll" id="pfluckerHeute"></div>
+      </div>
+      <input class="pfluecker-search" id="pfluckerSearch" type="text" placeholder="Name suchen…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <div class="chip-wrap" id="pfluckerList" style="display:none"></div>
+    </div>
   </div>
   <div class="section">
     <div class="section-title">🌱 Reihe</div>
@@ -488,7 +507,7 @@
     <!-- Stundenverteilung -->
     <div class="stat-block-title">Stundenverteilung</div>
     <div class="hour-chart" id="s-hourChart"></div>
-    <div class="hour-labels"><span>6h</span><span>9h</span><span>12h</span><span>15h</span><span>18h</span></div>
+    <div class="hour-labels"><span>4h</span><span>7h</span><span>10h</span><span>13h</span><span>16h</span><span>19h</span><span>22h</span></div>
 
     <div style="height:10px"></div>
   </div>
@@ -616,7 +635,7 @@ async function init() {
 
   buildChips('feldList', FELDER, 'feld', 'active-green');
   buildChips('sorteList', SORTEN, 'sorte', 'active-orange');
-  buildChips('pfluckerList', PFLÜCKER, 'pflücker', 'active-red');
+  buildPfluckerChips();
 
   const rGrid = document.getElementById('reiheGrid');
   for(let i=1;i<=REIHEN;i++){
@@ -650,6 +669,51 @@ function buildChips(cid, items, field, cls) {
       updateContextPill();
     };
     el.appendChild(c);
+  });
+}
+
+function buildPfluckerChips() {
+  const list = document.getElementById('pfluckerList');
+  PFLÜCKER.forEach(item => {
+    const c = document.createElement('div');
+    c.className = 'chip'; c.textContent = item; c.dataset.name = item.toLowerCase();
+    c.onclick = () => selectPfluecker(item);
+    list.appendChild(c);
+  });
+  document.getElementById('pfluckerSearch').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase().trim();
+    list.style.display = q ? 'flex' : 'none';
+    list.querySelectorAll('.chip').forEach(c => {
+      c.style.display = c.dataset.name.includes(q) ? '' : 'none';
+    });
+  });
+  updatePfluckerHeute();
+}
+
+function selectPfluecker(item) {
+  state['pflücker'] = item;
+  document.querySelectorAll('#pfluckerList .chip, #pfluckerHeute .chip').forEach(c => {
+    c.className = 'chip' + (c.textContent === item ? ' active-red' : '');
+  });
+  const searchEl = document.getElementById('pfluckerSearch');
+  searchEl.value = '';
+  document.getElementById('pfluckerList').style.display = 'none';
+  updateContextPill();
+}
+
+function updatePfluckerHeute() {
+  const heute = [...new Set(entries.map(e => e.pflücker))].filter(Boolean);
+  const section = document.getElementById('pfluckerHeuteSection');
+  const heuteList = document.getElementById('pfluckerHeute');
+  if (!heute.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  heuteList.innerHTML = '';
+  heute.forEach(item => {
+    const c = document.createElement('div');
+    c.className = 'chip' + (state.pflücker === item ? ' active-red' : '');
+    c.textContent = item;
+    c.onclick = () => selectPfluecker(item);
+    heuteList.appendChild(c);
   });
 }
 
@@ -690,7 +754,7 @@ function addEntry(){
     stunde:new Date().getHours(),
     feld,sorte,pflücker,reihe,qualität,korbtyp:state.korbtyp,gewicht_kg:parseFloat(gewicht)
   });
-  saveEntries(); updateSummary();
+  saveEntries(); updateSummary(); updatePfluckerHeute();
   pushEntry(entries[0]);
   showToast(`✅ ${parseFloat(gewicht).toFixed(1)} kg · ${feld} · ${sorte}`);
   state={...state,qualität:null,korbtyp:null,gewicht:'',numpadOpen:false};
@@ -761,13 +825,13 @@ function renderStatistik(){
   // Stundenverteilung
   const byH={};
   entries.forEach(e=>{const h=e.stunde!==undefined?e.stunde:parseInt(e.uhrzeit);byH[h]=(byH[h]||0)+e.gewicht_kg;});
-  const hours=Array.from({length:13},(_,i)=>i+6);
+  const hours=Array.from({length:19},(_,i)=>i+4);
   const maxH=Math.max(...hours.map(h=>byH[h]||0),0.1);
   document.getElementById('s-hourChart').innerHTML=hours.map(h=>{
     const v=byH[h]||0;
     return `<div class="hour-col">
       <div class="hour-bar${v>0?' has':''}" style="height:${(v/maxH*100).toFixed(0)}%" title="${h}:00 – ${v.toFixed(1)}kg"></div>
-      <div class="hour-tick">${String(h).padStart(2,'0')}</div>
+      <div class="hour-tick">${(h-4)%3===0?String(h).padStart(2,'0'):''}</div>
     </div>`;
   }).join('');
 }
