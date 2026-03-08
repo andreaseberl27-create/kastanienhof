@@ -187,6 +187,23 @@
   .q-A { background:#4CAF50; } .q-B { background:#FF9800; } .q-C { background:#9E9E9E; }
   .empty { text-align:center; padding:30px 20px; color:var(--text-dim); }
   .empty-icon { font-size:44px; margin-bottom:10px; opacity:.4; }
+  .proto-actions { display:flex; gap:6px; align-items:center; }
+  .proto-action-btn { background:none; border:1px solid var(--border); border-radius:8px; padding:5px 8px; font-size:14px; cursor:pointer; color:var(--text-dim); transition:background .15s,color .15s; }
+  .proto-action-btn:hover { background:var(--dunkel); color:var(--text); }
+  .proto-action-btn.del:hover { border-color:var(--rot); color:var(--rot); }
+
+  /* Edit modal */
+  .edit-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:200; display:flex; align-items:center; justify-content:center; }
+  .edit-overlay.hidden { display:none; }
+  .edit-modal { background:var(--mittel); border:1px solid var(--border); border-radius:16px; padding:20px; width:300px; max-width:90vw; }
+  .edit-modal h3 { margin:0 0 16px; font-size:15px; }
+  .edit-modal label { font-size:12px; color:var(--text-dim); display:block; margin-bottom:4px; }
+  .edit-modal input { width:100%; box-sizing:border-box; background:var(--dunkel); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:16px; color:var(--text); margin-bottom:14px; }
+  .edit-modal input:focus { outline:none; border-color:var(--accent); }
+  .edit-modal-btns { display:flex; gap:8px; }
+  .edit-modal-btns button { flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; font-size:14px; font-weight:700; }
+  .edit-modal-btns .save { background:var(--rot); color:#fff; }
+  .edit-modal-btns .cancel { background:var(--dunkel); color:var(--text); border:1px solid var(--border); }
 
   /* ── STATISTIK ── */
   .stat-header { padding:16px 16px 12px; }
@@ -582,6 +599,22 @@
   <button class="exp-btn clear" onclick="clearToday()">🗑️ Löschen</button>
 </div>
 
+<!-- Edit-Modal -->
+<div class="edit-overlay hidden" id="editOverlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="edit-modal">
+    <h3>✏️ Eintrag bearbeiten</h3>
+    <div id="editInfo" style="font-size:12px;color:var(--text-dim);margin-bottom:14px"></div>
+    <label>Gewicht (kg)</label>
+    <input type="number" id="editGewicht" step="0.1" min="0" max="99">
+    <label>Reihe</label>
+    <input type="number" id="editReihe" min="1" max="99">
+    <div class="edit-modal-btns">
+      <button class="cancel" onclick="closeEditModal()">Abbrechen</button>
+      <button class="save" onclick="saveEditEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -849,11 +882,15 @@ function renderProtokoll(){
   if(!entries.length){el.innerHTML='<div class="empty"><div class="empty-icon">📭</div><p>Noch keine Einträge heute</p></div>';return;}
   el.innerHTML=entries.slice(0,60).map(e=>`
     <div class="proto-item">
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="proto-name">${e.pflücker} · Reihe ${e.reihe}</div>
         <div class="proto-meta"><span class="qual-dot q-${e.qualität}"></span>Kl.${e.qualität} · ${e.feld} · ${e.sorte} · ${e.uhrzeit} Uhr</div>
       </div>
-      <div style="text-align:right"><div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div></div>
+      <div class="proto-actions">
+        <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
+        <button class="proto-action-btn" onclick="openEditModal(${e.id})" title="Bearbeiten">✏️</button>
+        <button class="proto-action-btn del" onclick="deleteEntry(${e.id})" title="Löschen">🗑</button>
+      </div>
     </div>`).join('');
 }
 
@@ -1187,6 +1224,72 @@ window.addEventListener('online', () => {
     syncFromSupabase();
   }
 });
+
+// ── PROTOKOLL EDIT / DELETE ───────────────────────────────────
+
+function saveEntriesToLocal() {
+  const localAll = JSON.parse(localStorage.getItem('ernteEntries') || '[]');
+  const others   = localAll.filter(e => e.datum !== todayStr);
+  localStorage.setItem('ernteEntries', JSON.stringify([...entries, ...others]));
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Eintrag löschen?')) return;
+  entries = entries.filter(e => e.id !== id);
+  saveEntriesToLocal();
+  updateSummary();
+  renderProtokoll();
+  if (CONFIG.url && CONFIG.key) {
+    try {
+      await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: sbHeaders()
+      });
+    } catch(e) { console.warn('DELETE fehlgeschlagen:', e); }
+  }
+}
+
+let editEntryId = null;
+
+function openEditModal(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  editEntryId = id;
+  document.getElementById('editInfo').textContent = `${e.pflücker} · ${e.feld} · ${e.uhrzeit} Uhr`;
+  document.getElementById('editGewicht').value = e.gewicht_kg;
+  document.getElementById('editReihe').value   = e.reihe;
+  document.getElementById('editOverlay').classList.remove('hidden');
+  document.getElementById('editGewicht').focus();
+}
+
+function closeEditModal() {
+  editEntryId = null;
+  document.getElementById('editOverlay').classList.add('hidden');
+}
+
+async function saveEditEntry() {
+  const e = entries.find(x => x.id === editEntryId);
+  if (!e) return;
+  const kg    = parseFloat(document.getElementById('editGewicht').value);
+  const reihe = parseInt(document.getElementById('editReihe').value);
+  if (isNaN(kg) || kg <= 0) { showToast('⚠️ Ungültiges Gewicht', 'var(--braun)'); return; }
+  if (isNaN(reihe) || reihe < 1) { showToast('⚠️ Ungültige Reihe', 'var(--braun)'); return; }
+  e.gewicht_kg = kg;
+  e.reihe      = reihe;
+  saveEntriesToLocal();
+  updateSummary();
+  renderProtokoll();
+  closeEditModal();
+  if (CONFIG.url && CONFIG.key) {
+    try {
+      await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}?id=eq.${editEntryId}`, {
+        method: 'PATCH',
+        headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ gewicht_kg: kg, reihe })
+      });
+    } catch(e) { console.warn('PATCH fehlgeschlagen:', e); }
+  }
+}
 
 // ── EINSTELLUNGEN HANDLER ──────────────────────────────────────
 
