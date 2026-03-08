@@ -424,20 +424,11 @@
   </div>
   <div class="section">
     <div class="section-title">✨ Qualität</div>
-    <div class="qual-grid">
-      <div class="qual-btn" data-q="A" onclick="selectQual('A')"><span class="emoji">🟢</span>Klasse A</div>
-      <div class="qual-btn" data-q="B" onclick="selectQual('B')"><span class="emoji">🟡</span>Klasse B</div>
-      <div class="qual-btn" data-q="C" onclick="selectQual('C')"><span class="emoji">⚪</span>Industrie</div>
-    </div>
+    <div class="qual-grid" id="qualGrid"></div>
   </div>
   <div class="section">
     <div class="section-title">🧺 Gebinde</div>
-    <div class="korb-row">
-      <div class="korb-btn" data-k="2.0" onclick="selectKorb('2.0')">Steige 2kg</div>
-      <div class="korb-btn" data-k="5.0" onclick="selectKorb('5.0')">Steige 5kg</div>
-      <div class="korb-btn" data-k="10.0" onclick="selectKorb('10.0')">Steige 10kg</div>
-      <div class="korb-btn" data-k="manuell" onclick="selectKorb('manuell')">Manuell</div>
-    </div>
+    <div class="korb-row" id="korbRow"></div>
   </div>
   <div class="section">
     <div class="section-title">⚖️ Gewicht (kg)</div>
@@ -601,10 +592,21 @@ const PRESET_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
 const PRESET_DOMAIN = '@kastanienhof.local';
 // ─────────────────────────────────────────────────────────────
 
-const FELDER   = ['Feld A','Feld B','Feld C','Feld Nord','Feld Süd'];
-const SORTEN   = ['Elsanta','Honeoye','Senga Sengana','Malling Centenary','Rumba','Polka'];
-const PFLÜCKER = ['Anna','Bernd','Carlos','Daria','Erika','Fatima','Georg','Hana'];
-const REIHEN   = 18;
+let FELDER   = JSON.parse(localStorage.getItem('sb_felder')      || 'null') || ['Feld A','Feld B','Feld C','Feld Nord','Feld Süd'];
+let SORTEN   = JSON.parse(localStorage.getItem('sb_sorten')      || 'null') || ['Elsanta','Honeoye','Senga Sengana','Malling Centenary','Rumba','Polka'];
+let PFLÜCKER = JSON.parse(localStorage.getItem('sb_pfluecker')   || 'null') || ['Anna','Bernd','Carlos','Daria','Erika','Fatima','Georg','Hana'];
+let QUALITAETEN = JSON.parse(localStorage.getItem('sb_qualitaeten') || 'null') || [
+  {code:'A', label:'Klasse A', emoji:'🟢', sort_order:1},
+  {code:'B', label:'Klasse B', emoji:'🟡', sort_order:2},
+  {code:'C', label:'Klasse C', emoji:'⚪', sort_order:3}
+];
+let GEBINDE = JSON.parse(localStorage.getItem('sb_gebinde') || 'null') || [
+  {label:'Steige 2kg',  gewicht_kg:2.0,  sort_order:1},
+  {label:'Steige 5kg',  gewicht_kg:5.0,  sort_order:2},
+  {label:'Steige 10kg', gewicht_kg:10.0, sort_order:3},
+  {label:'Manuell',     gewicht_kg:null, sort_order:4}
+];
+const REIHEN = 18;
 
 let state = { feld:null, sorte:null, pflücker:null, reihe:null, qualität:null, korbtyp:null, gewicht:'', numpadOpen:false };
 const todayStr = new Date().toISOString().slice(0,10);
@@ -636,6 +638,8 @@ async function init() {
   buildChips('feldList', FELDER, 'feld', 'active-green');
   buildChips('sorteList', SORTEN, 'sorte', 'active-orange');
   buildPfluckerChips();
+  buildQualButtons();
+  buildGebindeButtons();
 
   const rGrid = document.getElementById('reiheGrid');
   for(let i=1;i<=REIHEN;i++){
@@ -660,6 +664,7 @@ async function init() {
 
 function buildChips(cid, items, field, cls) {
   const el=document.getElementById(cid);
+  el.innerHTML='';
   items.forEach(item=>{
     const c=document.createElement('div'); c.className='chip'; c.textContent=item;
     c.onclick=()=>{
@@ -674,6 +679,9 @@ function buildChips(cid, items, field, cls) {
 
 function buildPfluckerChips() {
   const list = document.getElementById('pfluckerList');
+  list.innerHTML = '';
+  document.getElementById('pfluckerSearch').value = '';
+  list.style.display = 'none';
   PFLÜCKER.forEach(item => {
     const c = document.createElement('div');
     c.className = 'chip'; c.textContent = item; c.dataset.name = item.toLowerCase();
@@ -725,6 +733,58 @@ function updatePfluckerHeute() {
     c.onclick = () => selectPfluecker(item);
     heuteList.appendChild(c);
   });
+}
+
+function buildQualButtons() {
+  const el = document.getElementById('qualGrid');
+  el.innerHTML = '';
+  QUALITAETEN.forEach(q => {
+    const btn = document.createElement('div');
+    btn.className = 'qual-btn'; btn.dataset.q = q.code;
+    btn.innerHTML = `<span class="emoji">${q.emoji}</span>${q.label}`;
+    btn.onclick = () => selectQual(q.code);
+    el.appendChild(btn);
+  });
+}
+
+function buildGebindeButtons() {
+  const el = document.getElementById('korbRow');
+  el.innerHTML = '';
+  GEBINDE.forEach(g => {
+    const k = g.gewicht_kg != null ? String(g.gewicht_kg) : 'manuell';
+    const btn = document.createElement('div');
+    btn.className = 'korb-btn'; btn.dataset.k = k;
+    btn.textContent = g.label;
+    btn.onclick = () => selectKorb(k);
+    el.appendChild(btn);
+  });
+}
+
+async function loadMetadata() {
+  if (!CONFIG.url || !CONFIG.key) return;
+  try {
+    const headers = sbHeaders();
+    const [fR, sR, pR, qR, gR] = await Promise.all([
+      fetch(`${CONFIG.url}/rest/v1/felder?aktiv=eq.true&order=name`,             {headers}),
+      fetch(`${CONFIG.url}/rest/v1/sorten?aktiv=eq.true&order=name`,             {headers}),
+      fetch(`${CONFIG.url}/rest/v1/pfluecker?aktiv=eq.true&order=name`,          {headers}),
+      fetch(`${CONFIG.url}/rest/v1/qualitaeten?aktiv=eq.true&order=sort_order`,  {headers}),
+      fetch(`${CONFIG.url}/rest/v1/gebinde?aktiv=eq.true&order=sort_order`,      {headers}),
+    ]);
+    if (fR.ok) { FELDER      = (await fR.json()).map(r => r.name); localStorage.setItem('sb_felder',      JSON.stringify(FELDER)); }
+    if (sR.ok) { SORTEN      = (await sR.json()).map(r => r.name); localStorage.setItem('sb_sorten',      JSON.stringify(SORTEN)); }
+    if (pR.ok) { PFLÜCKER    = (await pR.json()).map(r => r.name); localStorage.setItem('sb_pfluecker',   JSON.stringify(PFLÜCKER)); }
+    if (qR.ok) { QUALITAETEN = await qR.json();                    localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
+    if (gR.ok) { GEBINDE     = await gR.json();                    localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
+    // UI neu aufbauen mit frischen Daten
+    buildChips('feldList', FELDER, 'feld', 'active-green');
+    buildChips('sorteList', SORTEN, 'sorte', 'active-orange');
+    buildPfluckerChips();
+    buildQualButtons();
+    buildGebindeButtons();
+  } catch(e) {
+    console.warn('Metadaten-Load fehlgeschlagen, nutze Cache/Defaults:', e);
+  }
 }
 
 function selectReihe(r){state.reihe=r;document.querySelectorAll('.reihe-btn').forEach((el,i)=>el.classList.toggle('active',i+1===r));}
@@ -972,6 +1032,7 @@ function showApp(username) {
   document.getElementById('noUserSection').style.display = 'none';
   if (CONFIG.url && CONFIG.key) {
     setSyncUI('idle');
+    loadMetadata();
     if (localStorage.getItem('sb_pending')) showToast('🔄 Offline-Einträge werden synchronisiert…','var(--blau)');
     syncFromSupabase();
   }
