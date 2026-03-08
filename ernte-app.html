@@ -431,11 +431,11 @@
     </div>
   </div>
   <div class="section">
-    <div class="section-title">🧺 Korbtyp</div>
+    <div class="section-title">🧺 Gebinde</div>
     <div class="korb-row">
-      <div class="korb-btn" data-k="0.5" onclick="selectKorb('0.5')">0,5 kg</div>
-      <div class="korb-btn" data-k="1.0" onclick="selectKorb('1.0')">1,0 kg</div>
-      <div class="korb-btn" data-k="2.0" onclick="selectKorb('2.0')">2,0 kg</div>
+      <div class="korb-btn" data-k="2.0" onclick="selectKorb('2.0')">Steige 2kg</div>
+      <div class="korb-btn" data-k="5.0" onclick="selectKorb('5.0')">Steige 5kg</div>
+      <div class="korb-btn" data-k="10.0" onclick="selectKorb('10.0')">Steige 10kg</div>
       <div class="korb-btn" data-k="manuell" onclick="selectKorb('manuell')">Manuell</div>
     </div>
   </div>
@@ -692,23 +692,33 @@ function buildPfluckerChips() {
 
 function selectPfluecker(item) {
   state['pflücker'] = item;
-  document.querySelectorAll('#pfluckerList .chip, #pfluckerHeute .chip').forEach(c => {
-    c.className = 'chip' + (c.textContent === item ? ' active-red' : '');
-  });
-  const searchEl = document.getElementById('pfluckerSearch');
-  searchEl.value = '';
+  document.getElementById('pfluckerSearch').value = '';
   document.getElementById('pfluckerList').style.display = 'none';
+  updatePfluckerHeute();
   updateContextPill();
 }
 
 function updatePfluckerHeute() {
-  const heute = [...new Set(entries.map(e => e.pflücker))].filter(Boolean);
-  const section = document.getElementById('pfluckerHeuteSection');
+  const section   = document.getElementById('pfluckerHeuteSection');
+  const sublabel  = section.querySelector('.sublabel');
   const heuteList = document.getElementById('pfluckerHeute');
-  if (!heute.length) { section.style.display = 'none'; return; }
+
+  // Nach Feld filtern wenn eines gewählt ist
+  const relevant = state.feld ? entries.filter(e => e.feld === state.feld) : entries;
+  const fromEntries = [...new Set(relevant.map(e => e.pflücker))].filter(Boolean);
+
+  // Aktuell gewählten Pflücker immer oben anzeigen, auch wenn noch kein Eintrag
+  const showList = (state.pflücker && !fromEntries.includes(state.pflücker))
+    ? [state.pflücker, ...fromEntries]
+    : fromEntries;
+
+  if (!showList.length) { section.style.display = 'none'; return; }
+
   section.style.display = '';
+  if (sublabel) sublabel.textContent = state.feld ? 'Heute aktiv \xb7 ' + state.feld : 'Heute aktiv';
+
   heuteList.innerHTML = '';
-  heute.forEach(item => {
+  showList.forEach(item => {
     const c = document.createElement('div');
     c.className = 'chip' + (state.pflücker === item ? ' active-red' : '');
     c.textContent = item;
@@ -728,6 +738,7 @@ function selectKorb(k){
 function updateContextPill(){
   const p=[state.feld,state.sorte].filter(Boolean);
   document.getElementById('contextPill').textContent=p.length?p.join(' · '):'Kein Feld gewählt';
+  updatePfluckerHeute();
 }
 
 function toggleNumpad(){state.numpadOpen?closeNumpad():openNumpad();}
