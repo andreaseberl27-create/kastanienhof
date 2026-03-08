@@ -225,6 +225,88 @@
   }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* ── Login overlay ── */
+  .login-overlay {
+    position:fixed; inset:0; z-index:9999;
+    background:var(--dunkel); display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .login-overlay.hidden { display:none; }
+  .login-card {
+    width:100%; max-width:360px;
+    background:linear-gradient(145deg,var(--mittel),#1e1208);
+    border:1px solid var(--border); border-radius:20px; padding:32px 24px;
+  }
+  .login-logo  { font-size:52px; text-align:center; margin-bottom:6px; }
+  .login-title { font-size:22px; font-weight:800; text-align:center; }
+  .login-sub   { font-size:12px; color:var(--text-dim); text-align:center; margin-bottom:28px; margin-top:3px; }
+  .login-field { margin-bottom:14px; }
+  .login-field label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-dim); display:block; margin-bottom:7px; }
+  .login-input {
+    width:100%; background:rgba(255,255,255,.05); border:1.5px solid var(--border);
+    border-radius:12px; padding:13px 14px; font-family:'Syne',sans-serif;
+    font-size:15px; color:var(--text); outline:none; transition:border-color .2s;
+  }
+  .login-input:focus { border-color:var(--accent); }
+  .login-input::placeholder { color:var(--text-dim); opacity:.5; }
+  .login-btn {
+    width:100%; padding:15px; border-radius:12px; border:none; margin-top:6px;
+    background:linear-gradient(135deg,var(--rot),var(--rot-dunkel));
+    font-family:'Syne',sans-serif; font-size:15px; font-weight:800; color:#fff;
+    cursor:pointer; transition:all .15s; box-shadow:0 6px 20px rgba(232,36,74,.35);
+  }
+  .login-btn:active { transform:scale(.97); }
+  .login-btn:disabled { opacity:.6; }
+  .login-error { font-size:12px; color:var(--rot-hell); text-align:center; min-height:18px; margin:10px 0 4px; }
+  .login-setup { display:block; text-align:center; margin-top:16px; font-size:11px; color:var(--text-dim); cursor:pointer; }
+  .login-setup:hover { color:var(--accent); }
+
+  /* ── Sync pill ── */
+  .sync-pill {
+    font-size:10px; font-weight:700; padding:3px 9px; border-radius:10px;
+    display:inline-flex; align-items:center; gap:4px; cursor:pointer; transition:all .2s;
+    background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace; white-space:nowrap;
+  }
+  .sync-pill.syncing { color:var(--accent); border-color:rgba(244,169,68,.4); animation:pulse 1s infinite; }
+  .sync-pill.synced  { color:var(--gruen-hell); border-color:rgba(74,140,66,.3); }
+  .sync-pill.offline { color:var(--rot-hell); border-color:rgba(232,36,74,.3); }
+  .sync-pill.error   { color:var(--rot-hell); border-color:rgba(232,36,74,.3); }
+  .sync-pill.hidden  { display:none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Einstellungen ── */
+  .settings-group { padding:0 16px 14px; }
+  .settings-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-dim); margin-bottom:7px; display:block; }
+  .settings-input {
+    width:100%; background:var(--mittel); border:1.5px solid var(--border);
+    border-radius:12px; padding:12px 14px; font-family:'JetBrains Mono',monospace;
+    font-size:13px; color:var(--text); outline:none; transition:border-color .2s;
+  }
+  .settings-input:focus { border-color:var(--accent); }
+  .settings-input::placeholder { color:var(--text-dim); opacity:.6; }
+  .sett-btn {
+    width:100%; padding:13px; border-radius:12px; border:none;
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:700;
+    cursor:pointer; transition:all .15s; margin-top:8px; text-align:center;
+  }
+  .sett-btn:active { transform:scale(.97); }
+  .sett-btn.primary  { background:var(--accent); color:var(--dunkel); }
+  .sett-btn.secondary{ background:var(--mittel); border:1.5px solid var(--border); color:var(--text-dim); }
+  .sett-btn.danger   { background:rgba(232,36,74,.12); border:1.5px solid rgba(232,36,74,.3); color:var(--rot-hell); }
+  .status-card {
+    margin:4px 16px 16px; background:var(--mittel); border:1px solid var(--border);
+    border-radius:12px; padding:13px 14px; display:flex; align-items:center; gap:12px;
+  }
+  .status-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; background:var(--text-dim); }
+  .status-dot.syncing { background:var(--accent); animation:pulse 1s infinite; }
+  .status-dot.synced  { background:var(--gruen-hell); }
+  .status-dot.error, .status-dot.offline { background:var(--rot-hell); }
+  .status-text { font-size:13px; font-weight:700; }
+  .status-sub  { font-size:11px; color:var(--text-dim); margin-top:2px; font-family:'JetBrains Mono',monospace; }
+  .help-text { padding:0 16px 16px; font-size:12px; color:var(--text-dim); line-height:1.8; }
+  .help-text strong { color:var(--text); }
+  .help-text code { color:var(--accent); font-family:'JetBrains Mono',monospace; }
+
   /* ── Export bar ── */
   .export-bar {
     position:fixed; bottom:0; left:50%; transform:translateX(-50%);
@@ -245,6 +327,32 @@
 </head>
 <body>
 
+<!-- ══ LOGIN ══ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">🍓</div>
+    <div class="login-title">ErntcTracker</div>
+    <div class="login-sub">Kastanienhof – Felderfassung</div>
+    <div class="login-field">
+      <label>Benutzername</label>
+      <input class="login-input" id="loginUsername" type="text" placeholder="z.B. anna"
+             autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false"
+             oninput="updateLoginHint()"
+             onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+      <div id="loginHint" style="font-size:11px;color:var(--text-dim);margin-top:5px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
+    </div>
+    <div class="login-field">
+      <label>Passwort</label>
+      <input class="login-input" id="loginPassword" type="password" placeholder="••••••••"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')loginUser()">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" id="loginBtn" onclick="loginUser()">Anmelden</button>
+    <span class="login-setup" onclick="openSetup()">⚙️ Supabase einrichten</span>
+  </div>
+</div>
+
 <div class="nav-tabs">
   <div class="nav-tab active" id="tab-erfassung" onclick="showPage('erfassung')">
     <span class="tab-icon">➕</span>Erfassung
@@ -255,12 +363,16 @@
   <div class="nav-tab" id="tab-statistik" onclick="showPage('statistik')">
     <span class="tab-icon">📊</span>Statistik
   </div>
+  <div class="nav-tab" id="tab-einstellungen" onclick="showPage('einstellungen')">
+    <span class="tab-icon">⚙️</span>Einstellungen
+  </div>
 </div>
 
 <!-- ══ ERFASSUNG ══ -->
 <div class="page active" id="page-erfassung">
   <div class="page-header">
     <div class="date-badge" id="dateBadge">--.--.----</div>
+    <div class="sync-pill hidden" id="syncPill" onclick="showPage('einstellungen')" title="Supabase-Einstellungen"></div>
     <div class="context-pill" id="contextPill">Kein Feld gewählt</div>
   </div>
 
@@ -382,6 +494,76 @@
   </div>
 </div>
 
+<!-- ══ EINSTELLUNGEN ══ -->
+<div class="page" id="page-einstellungen">
+  <div class="section" style="padding-top:16px;">
+    <div class="section-title">👤 Angemeldeter Nutzer</div>
+  </div>
+  <div id="userSection" style="display:none">
+    <div class="status-card" style="margin-bottom:0">
+      <div style="font-size:22px">👤</div>
+      <div style="flex:1">
+        <div class="status-text" id="loggedInUser">–</div>
+        <div class="status-sub">angemeldet</div>
+      </div>
+      <button onclick="logoutUser()" style="background:rgba(232,36,74,.15);border:1.5px solid rgba(232,36,74,.3);color:var(--rot-hell);border-radius:10px;padding:7px 12px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Abmelden</button>
+    </div>
+  </div>
+  <div id="noUserSection" style="padding:4px 16px 12px">
+    <div style="font-size:12px;color:var(--text-dim)">Nicht angemeldet</div>
+  </div>
+
+  <div class="section" style="padding-top:4px;">
+    <div class="section-title">⚙️ Supabase Konfiguration</div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-dot" id="statusDot"></div>
+    <div>
+      <div class="status-text" id="statusText">Nicht konfiguriert</div>
+      <div class="status-sub" id="statusSub">Supabase URL und Anon Key eingeben</div>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <label class="settings-label">Project URL</label>
+    <input class="settings-input" id="inputUrl" type="url" placeholder="https://xyz.supabase.co" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <div class="settings-group">
+    <label class="settings-label">Publishable Key</label>
+    <input class="settings-input" id="inputKey" type="password" placeholder="eyJhbGciOiJIUzI1NiIs…" autocomplete="off">
+  </div>
+  <div class="settings-group">
+    <label class="settings-label">E-Mail-Domain für Accounts</label>
+    <input class="settings-input" id="inputDomain" type="text" placeholder="@kastanienhof.local" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div style="font-size:11px;color:var(--text-dim);margin-top:6px">Login: <span style="color:var(--accent)" id="domainPreview">anna@kastanienhof.local</span></div>
+  </div>
+  <div class="settings-group">
+    <button class="sett-btn primary"    onclick="saveSettings()">💾 Speichern &amp; Verbinden</button>
+    <button class="sett-btn secondary"  onclick="testConnection()">🔌 Verbindung testen</button>
+    <button class="sett-btn secondary"  onclick="syncFromSupabase()">↻ Neu laden</button>
+    <button class="sett-btn danger"     onclick="clearSettings()">🗑️ Konfiguration löschen</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="padding-top:0">Einrichtung (einmalig)</div>
+  </div>
+  <div class="help-text">
+    <p>1. <strong>supabase.com</strong> → Projekt öffnen</p>
+    <p>2. SQL Editor → Script ausführen (siehe Projekt-Kontext)</p>
+    <p>3. Settings → API → <code>Project URL</code> kopieren</p>
+    <p>4. Settings → API → <code>Publishable</code> Key kopieren</p>
+    <p>5. Beides hier eintragen &amp; speichern</p>
+    <br>
+    <p><strong>Nutzer anlegen (einmalig):</strong></p>
+    <p>Authentication → Configuration → Email → "Confirm email" <strong>deaktivieren</strong></p>
+    <p>Authentication → Users → "Add user"</p>
+    <p>E-Mail: <code>name@kastanienhof.local</code> (oder eigene Domain oben einstellen)</p>
+    <p><strong>Wichtig:</strong> Beim Anlegen "Auto Confirm User" <strong>aktivieren</strong>, sonst schlägt der Login fehl</p>
+    <p>Der Benutzername im Login = Teil vor dem @</p>
+  </div>
+</div>
+
 <!-- Export bar -->
 <div class="export-bar" id="exportBar">
   <button class="exp-btn csv" onclick="exportCSV()">📥 CSV</button>
@@ -393,6 +575,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ── VORKONFIGURATION ─────────────────────────────────────────
+// Diese drei Werte einmalig eintragen → kein manuelles Einrichten auf jedem Gerät nötig
+const PRESET_URL    = 'https://xbfhsnsyisvehmonyrxh.supabase.co';
+const PRESET_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
+const PRESET_DOMAIN = '@kastanienhof.local';
+// ─────────────────────────────────────────────────────────────
+
 const FELDER   = ['Feld A','Feld B','Feld C','Feld Nord','Feld Süd'];
 const SORTEN   = ['Elsanta','Honeoye','Senga Sengana','Malling Centenary','Rumba','Polka'];
 const PFLÜCKER = ['Anna','Bernd','Carlos','Daria','Erika','Fatima','Georg','Hana'];
@@ -407,12 +596,20 @@ function showPage(name) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
-  document.getElementById('exportBar').style.display = name==='statistik' ? 'none' : 'flex';
+  document.getElementById('exportBar').style.display = (name==='statistik'||name==='einstellungen') ? 'none' : 'flex';
   if(name==='statistik') renderStatistik();
   if(name==='protokoll') renderProtokoll();
+  if(name==='einstellungen') {
+    document.getElementById('inputUrl').value    = CONFIG.url;
+    document.getElementById('inputKey').value    = CONFIG.key;
+    document.getElementById('inputDomain').value = authDomain();
+    const preview = document.getElementById('domainPreview');
+    if (preview) preview.textContent = 'anna' + authDomain();
+    updateSettingsStatus();
+  }
 }
 
-function init() {
+async function init() {
   const ds = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
   document.getElementById('dateBadge').textContent = ds;
   document.getElementById('statDateBadge').textContent = ds;
@@ -437,6 +634,9 @@ function init() {
   });
 
   updateSummary();
+
+  updateLoginHint();
+  await checkAuth();
 }
 
 function buildChips(cid, items, field, cls) {
@@ -491,6 +691,7 @@ function addEntry(){
     feld,sorte,pflücker,reihe,qualität,korbtyp:state.korbtyp,gewicht_kg:parseFloat(gewicht)
   });
   saveEntries(); updateSummary();
+  pushEntry(entries[0]);
   showToast(`✅ ${parseFloat(gewicht).toFixed(1)} kg · ${feld} · ${sorte}`);
   state={...state,qualität:null,korbtyp:null,gewicht:'',numpadOpen:false};
   document.querySelectorAll('.qual-btn,.korb-btn').forEach(el=>el.classList.remove('active'));
@@ -612,7 +813,309 @@ function clearToday(){
 }
 function showToast(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--gruen)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
+// ── AUTH ──────────────────────────────────────────────────────
+
+function authDomain() {
+  const d = PRESET_DOMAIN || localStorage.getItem('sb_domain') || '@kastanienhof.local';
+  return d.startsWith('@') ? d : '@' + d;
+}
+
+function updateLoginHint() {
+  const name = document.getElementById('loginUsername')?.value.trim().toLowerCase() || 'benutzername';
+  const hint = document.getElementById('loginHint');
+  if (hint) hint.textContent = '→ ' + name + authDomain();
+}
+
+function getSession()      { try { return JSON.parse(localStorage.getItem('sb_session') || 'null'); } catch { return null; } }
+function setSession(s)     { localStorage.setItem('sb_session', JSON.stringify(s)); }
+function clearSession()    { localStorage.removeItem('sb_session'); }
+function authToken()       { return getSession()?.access_token || null; }
+
+async function loginUser() {
+  const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Bitte alle Felder ausfüllen.'; return; }
+  if (!CONFIG.url || !CONFIG.key) { errEl.textContent = 'Supabase nicht konfiguriert – bitte zuerst einrichten.'; return; }
+  btn.textContent = 'Anmelden…'; btn.disabled = true;
+  try {
+    const res = await fetch(`${CONFIG.url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': CONFIG.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: username + authDomain(), password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Anmeldung fehlgeschlagen');
+    setSession({ access_token: data.access_token, refresh_token: data.refresh_token, username });
+    showApp(username);
+  } catch(e) {
+    errEl.textContent = e.message;
+  } finally {
+    btn.textContent = 'Anmelden'; btn.disabled = false;
+  }
+}
+
+async function logoutUser() {
+  if (!confirm('Abmelden?')) return;
+  try {
+    await fetch(`${CONFIG.url}/auth/v1/logout`, {
+      method: 'POST',
+      headers: { 'apikey': CONFIG.key, 'Authorization': `Bearer ${authToken()}` }
+    });
+  } catch {}
+  clearSession();
+  document.getElementById('userSection').style.display   = 'none';
+  document.getElementById('noUserSection').style.display = 'block';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+async function refreshSession() {
+  const s = getSession();
+  if (!s?.refresh_token || !CONFIG.url || !CONFIG.key) return false;
+  try {
+    const res = await fetch(`${CONFIG.url}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': CONFIG.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token })
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    setSession({ ...s, access_token: data.access_token, refresh_token: data.refresh_token });
+    return true;
+  } catch { return false; }
+}
+
+function showApp(username) {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('loggedInUser').textContent    = username;
+  document.getElementById('userSection').style.display   = 'block';
+  document.getElementById('noUserSection').style.display = 'none';
+  if (CONFIG.url && CONFIG.key) {
+    setSyncUI('idle');
+    if (localStorage.getItem('sb_pending')) showToast('🔄 Offline-Einträge werden synchronisiert…','var(--blau)');
+    syncFromSupabase();
+  }
+}
+
+function openSetup() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  showPage('einstellungen');
+}
+
+async function checkAuth() {
+  if (!CONFIG.url || !CONFIG.key) {
+    // Nicht konfiguriert → App direkt öffnen (Ersteinrichtung)
+    document.getElementById('loginOverlay').classList.add('hidden');
+    return;
+  }
+  const s = getSession();
+  if (s?.access_token) {
+    const ok = await refreshSession();
+    if (ok) { showApp(getSession().username); return; }
+    clearSession();
+  }
+  // Login-Overlay zeigen (ist per Default sichtbar)
+}
+
+// ── SUPABASE INTEGRATION ──────────────────────────────────────
+
+const CONFIG = {
+  get url() { return (PRESET_URL || localStorage.getItem('sb_url') || '').replace(/\/$/, ''); },
+  get key() { return PRESET_KEY || localStorage.getItem('sb_key') || ''; },
+  table: 'ernteeintraege'
+};
+
+let isSyncing = false;
+
+function sbHeaders() {
+  const token = authToken() || CONFIG.key;
+  return { 'apikey': CONFIG.key, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+// Zeilen aus DB → App-Objekt
+function rowToEntry(r) {
+  return { id: r.id, datum: r.datum, uhrzeit: r.uhrzeit, stunde: r.stunde,
+           feld: r.feld, sorte: r.sorte, pflücker: r.pfluecker, reihe: r.reihe,
+           qualität: r.qualitaet, korbtyp: r.korbtyp, gewicht_kg: r.gewicht_kg };
+}
+
+// App-Objekt → DB-Zeile
+function entryToRow(e) {
+  return { id: e.id, datum: e.datum, uhrzeit: e.uhrzeit, stunde: e.stunde,
+           feld: e.feld, sorte: e.sorte, pfluecker: e.pflücker, reihe: e.reihe,
+           qualitaet: e.qualität, korbtyp: e.korbtyp, gewicht_kg: e.gewicht_kg };
+}
+
+function setSyncUI(status, label) {
+  const pill = document.getElementById('syncPill');
+  if (!pill) return;
+  if (!CONFIG.url || !CONFIG.key) { pill.className = 'sync-pill hidden'; return; }
+  const icons  = { idle:'○', syncing:'↻', synced:'✓', offline:'⚠', error:'✗' };
+  const labels = { idle:'Supabase', syncing:'Sync…', synced:'Synchronisiert', offline:'Offline', error:'Fehler' };
+  pill.className = 'sync-pill ' + status;
+  pill.textContent = (icons[status]||'') + ' ' + (label || labels[status] || status);
+}
+
+// Heutige Einträge aus Supabase laden
+async function loadFromSupabase(date) {
+  const res = await fetch(
+    `${CONFIG.url}/rest/v1/${CONFIG.table}?datum=eq.${date}&order=id.desc`,
+    { headers: sbHeaders() }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()).map(rowToEntry);
+}
+
+// Einen Eintrag in Supabase einfügen
+async function insertToSupabase(entry) {
+  const res = await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}`, {
+    method: 'POST',
+    headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+    body: JSON.stringify(entryToRow(entry))
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`HTTP ${res.status}: ${err}`);
+  }
+}
+
+// Offline-Queue: ausstehende Einträge hochladen
+async function flushPending() {
+  const pending = JSON.parse(localStorage.getItem('sb_pending') || '[]');
+  if (!pending.length) return;
+  for (const entry of pending) {
+    await insertToSupabase(entry);
+  }
+  localStorage.removeItem('sb_pending');
+}
+
+// Beim Start: DB laden + Offline-Queue leeren
+async function syncFromSupabase() {
+  if (!CONFIG.url || !CONFIG.key) return;
+  if (isSyncing) return;
+  isSyncing = true;
+  setSyncUI('syncing');
+  try {
+    await flushPending();
+    const dbEntries = await loadFromSupabase(todayStr);
+    // Merge: DB + lokale Einträge (die noch nicht in DB sind)
+    const localAll  = JSON.parse(localStorage.getItem('ernteEntries') || '[]');
+    const dbIds     = new Set(dbEntries.map(e => e.id));
+    const onlyLocal = localAll.filter(e => e.datum === todayStr && !dbIds.has(e.id));
+    entries = [...dbEntries, ...onlyLocal].sort((a, b) => b.id - a.id);
+    // Lokal speichern
+    const otherDays = localAll.filter(e => e.datum !== todayStr);
+    localStorage.setItem('ernteEntries', JSON.stringify([...entries, ...otherDays]));
+    updateSummary();
+    const activePage = document.querySelector('.page.active');
+    if (activePage?.id === 'page-protokoll') renderProtokoll();
+    if (activePage?.id === 'page-statistik') renderStatistik();
+    setSyncUI('synced');
+    setTimeout(() => setSyncUI('idle'), 3000);
+  } catch(e) {
+    console.error('Supabase sync failed:', e);
+    setSyncUI(navigator.onLine ? 'error' : 'offline');
+    setTimeout(() => setSyncUI('idle'), 5000);
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Neuen Eintrag direkt in Supabase schreiben (oder in Pending-Queue)
+async function pushEntry(entry) {
+  if (!CONFIG.url || !CONFIG.key) return;
+  setSyncUI('syncing');
+  try {
+    await insertToSupabase(entry);
+    setSyncUI('synced');
+    setTimeout(() => setSyncUI('idle'), 2000);
+  } catch(e) {
+    console.error('Supabase insert failed:', e);
+    // Offline-Queue
+    const pending = JSON.parse(localStorage.getItem('sb_pending') || '[]');
+    pending.push(entry);
+    localStorage.setItem('sb_pending', JSON.stringify(pending));
+    setSyncUI('offline');
+    setTimeout(() => setSyncUI('idle'), 5000);
+  }
+}
+
+window.addEventListener('online', () => {
+  if (CONFIG.url && CONFIG.key && (localStorage.getItem('sb_pending'))) {
+    showToast('🔄 Verbindung wiederhergestellt – synchronisiere…', 'var(--blau)');
+    syncFromSupabase();
+  }
+});
+
+// ── EINSTELLUNGEN HANDLER ──────────────────────────────────────
+
+function saveSettings() {
+  const url    = document.getElementById('inputUrl').value.trim();
+  const key    = document.getElementById('inputKey').value.trim();
+  const domain = document.getElementById('inputDomain').value.trim();
+  if (!url || !key) { showToast('⚠️ URL und Key ausfüllen!', 'var(--braun)'); return; }
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  if (domain) localStorage.setItem('sb_domain', domain.startsWith('@') ? domain : '@' + domain);
+  showToast('✅ Gespeichert');
+  updateSettingsStatus();
+  setSyncUI('idle');
+  // Wenn noch kein Login → Login-Overlay zeigen
+  if (!getSession()) {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+  }
+}
+
+async function testConnection() {
+  if (!CONFIG.url || !CONFIG.key) { showToast('⚠️ Erst konfigurieren!', 'var(--braun)'); return; }
+  updateSettingsStatus('syncing', 'Teste Verbindung…', '');
+  try {
+    const res = await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}?limit=1`, { headers: sbHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const host = new URL(CONFIG.url).hostname;
+    updateSettingsStatus('synced', 'Verbindung OK ✓', host);
+    showToast('✅ Verbindung erfolgreich!');
+  } catch(e) {
+    updateSettingsStatus('error', 'Verbindung fehlgeschlagen', e.message);
+    showToast('❌ ' + e.message, 'var(--rot-dunkel)');
+  }
+}
+
+function clearSettings() {
+  if (!confirm('Konfiguration löschen? Lokale Daten bleiben erhalten.')) return;
+  ['sb_url','sb_key','sb_pending'].forEach(k => localStorage.removeItem(k));
+  document.getElementById('inputUrl').value = '';
+  document.getElementById('inputKey').value = '';
+  updateSettingsStatus();
+  setSyncUI('idle');
+  showToast('🗑️ Konfiguration gelöscht', 'var(--braun)');
+}
+
+function updateSettingsStatus(status, text, sub) {
+  const dot   = document.getElementById('statusDot');
+  const txt   = document.getElementById('statusText');
+  const subEl = document.getElementById('statusSub');
+  if (!dot) return;
+  if (!status) {
+    const ok = CONFIG.url && CONFIG.key;
+    status = ok ? 'synced' : 'offline';
+    text   = ok ? 'Konfiguriert' : 'Nicht konfiguriert';
+    sub    = ok ? new URL(CONFIG.url).hostname : 'Supabase URL und Anon Key eingeben';
+  }
+  dot.className     = 'status-dot ' + status;
+  txt.textContent   = text;
+  subEl.textContent = sub !== undefined ? sub : '';
+}
+
+// ──────────────────────────────────────────────────────────────
+
 init();
 </script>
 </body>
+
 </html>
