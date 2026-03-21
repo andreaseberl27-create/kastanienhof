@@ -482,8 +482,8 @@ tbody tr:hover { background:#fafafa; }
         <select class="form-input" id="pe_sorte_id"></select></div>
       <div><label class="form-label">Korbtyp</label>
         <select class="form-input" id="pe_gebinde_id"></select></div>
-      <div><label class="form-label">Gewicht (kg) *</label>
-        <input class="form-input" id="pe_gewicht" type="number" step="0.1" min="0.1" max="999"></div>
+      <div><label class="form-label">Menge (× Gebinde) *</label>
+        <input class="form-input" id="pe_menge" type="number" step="0.1" min="0.1" max="99"></div>
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeProtoEdit()">Abbrechen</button>
@@ -1298,7 +1298,7 @@ async function loadProtokoll() {
   document.getElementById('tableContainer').innerHTML =
     '<table><thead><tr><th colspan="10" style="text-align:center;padding:24px;color:var(--dim)">Lade…</th></tr></thead></table>';
 
-  let qs = 'select=id,datum,uhrzeit,gewicht_kg,reihe,etiketten_id,pfluecker:pfluecker_id(id,name),feld:feld_id(id,name),sorte:sorte_id(id,name),gebinde:gebinde_id(id,label)&order=datum.desc,uhrzeit.desc&limit=500';
+  let qs = 'select=id,datum,uhrzeit,menge,reihe,etiketten_id,pfluecker:pfluecker_id(id,name),feld:feld_id(id,name),sorte:sorte_id(id,name),gebinde:gebinde_id(id,label,gewicht_kg)&order=datum.desc,uhrzeit.desc&limit=500';
   if (von)       qs += `&datum=gte.${von}`;
   if (bis)       qs += `&datum=lte.${bis}`;
   if (feld)      qs += `&feld_id=eq.${feld}`;
@@ -1351,7 +1351,7 @@ function renderProtokollTable(data) {
     <td>${esc(r.feld?.name||'–')}</td>
     <td style="color:var(--dim)">${esc(r.sorte?.name||'–')}</td>
     <td style="color:var(--dim);font-size:13px">${esc(r.gebinde?.label||'–')}</td>
-    <td style="font-weight:600;font-family:monospace">${r.gewicht_kg != null ? parseFloat(r.gewicht_kg).toFixed(1)+' kg' : '–'}</td>
+    <td style="font-weight:600;font-family:monospace">${r.gebinde?.gewicht_kg != null ? (parseFloat(r.menge||1) * r.gebinde.gewicht_kg).toFixed(1)+' kg' : (parseFloat(r.menge||1)+'×')}</td>
     <td style="color:var(--dim);font-family:monospace;font-size:12px">${r.etiketten_id != null ? '#'+r.etiketten_id : '–'}</td>
     <td><div class="actions">
       <button class="btn-icon" onclick="openProtoEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
@@ -1366,7 +1366,7 @@ function renderProtokollTable(data) {
     <tbody>${rows}</tbody>
   </table>`;
   // Summe unten anzeigen
-  const totalKg = data.reduce((s,r) => s + parseFloat(r.gewicht_kg||0), 0);
+  const totalKg = data.reduce((s,r) => s + (r.gebinde?.gewicht_kg != null ? parseFloat(r.menge||1) * r.gebinde.gewicht_kg : 0), 0);
   const countEl = document.getElementById('rowCount');
   if (countEl) countEl.textContent = ` · ${data.length} Einträge · ${totalKg.toFixed(1)} kg gesamt`;
 }
@@ -1375,13 +1375,13 @@ function openProtoEdit(id) {
   // Daten aus dem DOM holen: Da wir keine Cache-Kopie der Protokoll-Daten haben,
   // holen wir den Eintrag direkt aus Supabase
   protoEditId = id;
-  sbGet('ernteeintraege', `id=eq.${id}&select=id,datum,uhrzeit,pfluecker_id,feld_id,sorte_id,gebinde_id,gewicht_kg&limit=1`)
+  sbGet('ernteeintraege', `id=eq.${id}&select=id,datum,uhrzeit,pfluecker_id,feld_id,sorte_id,gebinde_id,menge&limit=1`)
     .then(rows => {
       if (!rows.length) return;
       const r = rows[0];
       document.getElementById('pe_datum').value   = r.datum || '';
       document.getElementById('pe_uhrzeit').value = r.uhrzeit || '';
-      document.getElementById('pe_gewicht').value = r.gewicht_kg != null ? r.gewicht_kg : '';
+      document.getElementById('pe_menge').value   = r.menge != null ? r.menge : 1;
       // Selects befüllen und aktuellen Wert setzen
       const opt = (arr, valKey, labelKey, cur) =>
         `<option value="">– bitte wählen –</option>` +
@@ -1392,7 +1392,7 @@ function openProtoEdit(id) {
         cache.sorten.map(s => `<option value="${s.id}" ${s.id==r.sorte_id?'selected':''}>${esc(s.name)}</option>`).join('');
       document.getElementById('pe_gebinde_id').innerHTML   = opt(cache.gebinde,     'id', 'label', r.gebinde_id);
       document.getElementById('protoEditOverlay').classList.remove('hidden');
-      document.getElementById('pe_gewicht').focus();
+      document.getElementById('pe_menge').focus();
     })
     .catch(e => alert('Fehler beim Laden: ' + e.message));
 }
@@ -1404,10 +1404,10 @@ function closeProtoEdit() {
 
 async function saveProtoEdit() {
   if (!protoEditId) return;
-  const datum   = document.getElementById('pe_datum').value;
-  const gewicht = parseFloat(document.getElementById('pe_gewicht').value);
-  if (!datum)          { alert('Datum ist erforderlich.'); return; }
-  if (isNaN(gewicht) || gewicht <= 0) { alert('Bitte gültiges Gewicht eingeben.'); return; }
+  const datum = document.getElementById('pe_datum').value;
+  const menge = parseFloat(document.getElementById('pe_menge').value);
+  if (!datum)               { alert('Datum ist erforderlich.'); return; }
+  if (isNaN(menge) || menge <= 0) { alert('Bitte gültige Menge eingeben.'); return; }
   const uhrzeit = document.getElementById('pe_uhrzeit').value || null;
   const stunde  = uhrzeit ? parseInt(uhrzeit.split(':')[0]) : null;
   const intVal = id => { const v = document.getElementById(id).value; return v ? parseInt(v) : null; };
@@ -1417,7 +1417,7 @@ async function saveProtoEdit() {
     feld_id:      intVal('pe_feld_id'),
     sorte_id:     intVal('pe_sorte_id'),
     gebinde_id:   intVal('pe_gebinde_id'),
-    gewicht_kg:   gewicht,
+    menge,
   };
   try {
     await sbPatch('ernteeintraege', protoEditId, data);
@@ -1476,7 +1476,7 @@ async function loadAuswertung() {
   const bis = document.getElementById('dash_bis').value;
   document.getElementById('tableContainer').innerHTML =
     '<div class="dash-empty">Lade Auswertung…</div>';
-  let qs = 'select=datum,stunde,gewicht_kg,pfluecker:pfluecker_id(name),feld:feld_id(name),sorte:sorte_id(name),qualitaet:qualitaet_id(code),gebinde:gebinde_id(label)&order=datum.desc&limit=5000';
+  let qs = 'select=datum,stunde,menge,pfluecker:pfluecker_id(name),feld:feld_id(name),sorte:sorte_id(name),qualitaet:qualitaet_id(code),gebinde:gebinde_id(label,gewicht_kg)&order=datum.desc&limit=5000';
   if (von) qs += `&datum=gte.${von}`;
   if (bis) qs += `&datum=lte.${bis}`;
   try {
@@ -1490,13 +1490,17 @@ async function loadAuswertung() {
   }
 }
 
+function rowKg(r) {
+  return r.gebinde?.gewicht_kg != null ? parseFloat(r.menge || 1) * r.gebinde.gewicht_kg : 0;
+}
+
 function agg(data, keyFn) {
   const map = {};
   data.forEach(r => {
     const k = keyFn(r) || '–';
     if (!map[k]) map[k] = { kg: 0, gebinde: 0 };
-    map[k].kg      += parseFloat(r.gewicht_kg || 0);
-    map[k].gebinde += 1;
+    map[k].kg      += rowKg(r);
+    map[k].gebinde += parseFloat(r.menge || 1);
   });
   return Object.entries(map).sort((a,b) => b[1].kg - a[1].kg);
 }
@@ -1542,15 +1546,15 @@ function renderDashboard(data) {
     return;
   }
 
-  const totalKg      = data.reduce((s,r) => s + parseFloat(r.gewicht_kg || 0), 0);
-  const totalGebinde = data.length;
+  const totalKg      = data.reduce((s,r) => s + rowKg(r), 0);
+  const totalGebinde = data.reduce((s,r) => s + parseFloat(r.menge || 1), 0);
   const avgKg        = totalGebinde ? totalKg / totalGebinde : 0;
   const pflSet       = new Set(data.map(r => r.pfluecker?.name).filter(Boolean));
   const feldSet      = new Set(data.map(r => r.feld?.name).filter(Boolean));
 
   // Heute vs. Vortag für KPI-Trend
   const today = new Date().toISOString().slice(0,10);
-  const kgHeute = data.filter(r => r.datum === today).reduce((s,r) => s + parseFloat(r.gewicht_kg||0),0);
+  const kgHeute = data.filter(r => r.datum === today).reduce((s,r) => s + rowKg(r), 0);
 
   const byFeld      = agg(data, r => r.feld?.name);
   const byPfluecker = agg(data, r => r.pfluecker?.name);

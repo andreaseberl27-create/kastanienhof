@@ -726,8 +726,6 @@
     <div id="editInfo" style="font-size:12px;color:var(--text-dim);margin-bottom:14px"></div>
     <label>Menge (× Gebinde)</label>
     <input type="number" id="editMenge" step="0.1" min="0.1" max="9">
-    <label>Gewicht gesamt (kg)</label>
-    <input type="number" id="editGewicht" step="0.1" min="0" max="999">
     <div class="edit-modal-btns">
       <button class="cancel" onclick="closeEditModal()">Abbrechen</button>
       <button class="save" onclick="saveEditEntry()">Speichern</button>
@@ -778,7 +776,7 @@ let scanMenge = 1.0;
 let state = { pflücker: null, _etikettenId: null };
 
 const todayStr = new Date().toISOString().slice(0,10);
-let entries = JSON.parse(localStorage.getItem('ernteEntries')||'[]').filter(e=>e.datum===todayStr);
+let entries = JSON.parse(localStorage.getItem('ernteEntries')||'[]').filter(e=>e.datum===todayStr).map(rehydrateEntry);
 
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1056,9 +1054,12 @@ function sbHeaders() {
 
 // Zeilen aus DB → App-Objekt (IDs + aufgelöste Anzeigenamen)
 function rowToEntry(r) {
+  const gb    = GEBINDE.find(g => g.id === r.gebinde_id);
+  const menge = r.menge ?? 1;
   return {
     id: r.id, datum: r.datum, uhrzeit: r.uhrzeit, stunde: r.stunde, reihe: r.reihe ?? null,
-    gewicht_kg: r.gewicht_kg,
+    menge,
+    gewicht_kg: gb?.gewicht_kg != null ? parseFloat((menge * gb.gewicht_kg).toFixed(3)) : 0,
     // IDs (für DB-Schreibzugriffe)
     feld_id:      r.feld_id      ?? null,
     sorte_id:     r.sorte_id     ?? null,
@@ -1071,7 +1072,7 @@ function rowToEntry(r) {
     sorte:    SORTEN_DATA.find(s => s.id === r.sorte_id)?.name       || '',
     pflücker: PFLÜCKER_DATA.find(p => p.id === r.pfluecker_id)?.name || '–',
     qualität: QUALITAETEN.find(q => q.id === r.qualitaet_id)?.code   || null,
-    korbtyp:  GEBINDE.find(g => g.id === r.gebinde_id)?.label        || '–',
+    korbtyp:  gb?.label        || '–',
   };
 }
 
@@ -1079,7 +1080,7 @@ function rowToEntry(r) {
 function entryToRow(e) {
   return {
     id: e.id, datum: e.datum, uhrzeit: e.uhrzeit, stunde: e.stunde, reihe: e.reihe ?? null,
-    gewicht_kg:   e.gewicht_kg,
+    menge:        e.menge        ?? 1,
     feld_id:      e.feld_id      ?? null,
     sorte_id:     e.sorte_id     ?? null,
     pfluecker_id: e.pfluecker_id ?? null,
@@ -1087,6 +1088,13 @@ function entryToRow(e) {
     gebinde_id:   e.gebinde_id   ?? null,
     etiketten_id: e.etiketten_id ?? null,
   };
+}
+
+// Nach localStorage-Reload: gewicht_kg aus menge + gebinde neu berechnen
+function rehydrateEntry(e) {
+  const gb = GEBINDE.find(g => g.id === e.gebinde_id);
+  e.gewicht_kg = gb?.gewicht_kg != null ? parseFloat(((e.menge ?? 1) * gb.gewicht_kg).toFixed(3)) : 0;
+  return e;
 }
 
 function setSyncUI(status, label) {
@@ -1144,7 +1152,7 @@ async function syncFromSupabase() {
     // Merge: DB + lokale Einträge (die noch nicht in DB sind)
     const localAll  = JSON.parse(localStorage.getItem('ernteEntries') || '[]');
     const dbIds     = new Set(dbEntries.map(e => e.id));
-    const onlyLocal = localAll.filter(e => e.datum === todayStr && !dbIds.has(e.id));
+    const onlyLocal = localAll.filter(e => e.datum === todayStr && !dbIds.has(e.id)).map(rehydrateEntry);
     entries = [...dbEntries, ...onlyLocal].sort((a, b) => b.id - a.id);
     // Lokal speichern
     const otherDays = localAll.filter(e => e.datum !== todayStr);
@@ -1450,10 +1458,9 @@ function openEditModal(id) {
   if (!e) return;
   editEntryId = id;
   document.getElementById('editInfo').textContent = `${e.pflücker} · ${e.feld} · ${e.uhrzeit} Uhr`;
-  document.getElementById('editMenge').value   = '';
-  document.getElementById('editGewicht').value = e.gewicht_kg;
+  document.getElementById('editMenge').value = e.menge ?? 1;
   document.getElementById('editOverlay').classList.remove('hidden');
-  document.getElementById('editGewicht').focus();
+  document.getElementById('editMenge').focus();
 }
 
 function closeEditModal() {
@@ -1464,9 +1471,10 @@ function closeEditModal() {
 async function saveEditEntry() {
   const e = entries.find(x => x.id === editEntryId);
   if (!e) return;
-  const kg = parseFloat(document.getElementById('editGewicht').value);
-  if (isNaN(kg) || kg <= 0) { showToast('⚠️ Ungültiges Gewicht', 'var(--braun)'); return; }
-  e.gewicht_kg = kg;
+  const menge = parseFloat(document.getElementById('editMenge').value);
+  if (isNaN(menge) || menge <= 0) { showToast('⚠️ Ungültige Menge', 'var(--braun)'); return; }
+  e.menge = menge;
+  rehydrateEntry(e); // gewicht_kg neu berechnen
   saveEntriesToLocal();
   updateSummary();
   renderProtokoll();
@@ -1477,7 +1485,7 @@ async function saveEditEntry() {
       await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}?id=eq.${editEntryId}`, {
         method: 'PATCH',
         headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ gewicht_kg: kg })
+        body: JSON.stringify({ menge })
       });
     } catch(e) { console.warn('PATCH fehlgeschlagen:', e); }
   }
@@ -1600,14 +1608,15 @@ function showScanSuccess(name) {
 async function addEntryFromScan(pickerName) {
   const { feld, sorte, gebinde } = SCHICHT;
   if (!feld || !gebinde) return;
-  const gewicht_kg = gebinde.gewicht_kg != null ? parseFloat((scanMenge * gebinde.gewicht_kg).toFixed(3)) : 0;
   const feldObj  = FELDER_DATA.find(f => f.name === feld);
   const sorteObj = SORTEN_DATA.find(s => s.name === sorte);
   const pflObj   = PFLÜCKER_DATA.find(p => p.name === pickerName);
+  const menge    = scanMenge;
   const entry = {
     id: Date.now(), datum: todayStr,
     uhrzeit: new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}),
     stunde: new Date().getHours(), reihe: null,
+    menge,
     // IDs
     feld_id:      feldObj?.id  ?? null,
     sorte_id:     sorteObj?.id ?? null,
@@ -1617,7 +1626,7 @@ async function addEntryFromScan(pickerName) {
     etiketten_id: state._etikettenId ?? null,
     // Anzeigenamen
     feld, sorte: sorte || '', pflücker: pickerName, qualität: null, korbtyp: gebinde.label,
-    gewicht_kg,
+    gewicht_kg: gebinde.gewicht_kg != null ? parseFloat((menge * gebinde.gewicht_kg).toFixed(3)) : 0,
   };
   state._etikettenId = null;
   entries.unshift(entry);
