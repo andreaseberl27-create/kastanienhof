@@ -475,17 +475,13 @@ tbody tr:hover { background:#fafafa; }
       <div><label class="form-label">Uhrzeit</label>
         <input class="form-input" id="pe_uhrzeit" type="time"></div>
       <div class="full"><label class="form-label">Pflücker</label>
-        <input class="form-input" id="pe_pfluecker" list="pe_pfluecker_dl" autocomplete="off">
-        <datalist id="pe_pfluecker_dl"></datalist></div>
+        <select class="form-input" id="pe_pfluecker_id"></select></div>
       <div><label class="form-label">Feld</label>
-        <input class="form-input" id="pe_feld" list="pe_feld_dl" autocomplete="off">
-        <datalist id="pe_feld_dl"></datalist></div>
+        <select class="form-input" id="pe_feld_id"></select></div>
       <div><label class="form-label">Sorte</label>
-        <input class="form-input" id="pe_sorte" list="pe_sorte_dl" autocomplete="off">
-        <datalist id="pe_sorte_dl"></datalist></div>
+        <select class="form-input" id="pe_sorte_id"></select></div>
       <div><label class="form-label">Korbtyp</label>
-        <input class="form-input" id="pe_korbtyp" list="pe_korb_dl" autocomplete="off">
-        <datalist id="pe_korb_dl"></datalist></div>
+        <select class="form-input" id="pe_gebinde_id"></select></div>
       <div><label class="form-label">Gewicht (kg) *</label>
         <input class="form-input" id="pe_gewicht" type="number" step="0.1" min="0.1" max="999"></div>
     </div>
@@ -1284,11 +1280,11 @@ async function initProtokoll() {
   }
   // Felder- und Pflücker-Dropdowns befüllen
   await Promise.all([
-    cache.felder.length   || sbGet('felder',   'order=name&select=name').then(r => { cache.felder = r; }),
-    cache.sorten.length   || sbGet('sorten',   'order=name&select=name').then(r => { cache.sorten = r; }),
-    cache.qualitaeten.length || sbGet('qualitaeten','order=sort_order&select=code,label').then(r => { cache.qualitaeten = r; }),
-    cache.gebinde.length  || sbGet('gebinde',  'order=sort_order&select=label').then(r => { cache.gebinde = r; }),
-    cache.mitarbeiter.length || sbGet('pfluecker','order=mitarbeiter_nr&select=name').then(r => { cache.mitarbeiter = r; }),
+    cache.felder.length      || sbGet('felder',      'order=name&select=id,name').then(r => { cache.felder = r; }),
+    cache.sorten.length      || sbGet('sorten',      'order=name&select=id,name').then(r => { cache.sorten = r; }),
+    cache.qualitaeten.length || sbGet('qualitaeten', 'order=sort_order&select=id,code,label').then(r => { cache.qualitaeten = r; }),
+    cache.gebinde.length     || sbGet('gebinde',     'order=sort_order&select=id,label').then(r => { cache.gebinde = r; }),
+    cache.mitarbeiter.length || sbGet('pfluecker',   'order=mitarbeiter_nr&select=id,name').then(r => { cache.mitarbeiter = r; }),
   ]);
   await loadProtokoll();
 }
@@ -1302,11 +1298,11 @@ async function loadProtokoll() {
   document.getElementById('tableContainer').innerHTML =
     '<table><thead><tr><th colspan="10" style="text-align:center;padding:24px;color:var(--dim)">Lade…</th></tr></thead></table>';
 
-  let qs = 'select=id,datum,uhrzeit,pfluecker,feld,sorte,korbtyp,gewicht_kg,etiketten_nr&order=datum.desc,uhrzeit.desc&limit=500';
+  let qs = 'select=id,datum,uhrzeit,gewicht_kg,reihe,etiketten_id,pfluecker:pfluecker_id(id,name),feld:feld_id(id,name),sorte:sorte_id(id,name),gebinde:gebinde_id(id,label)&order=datum.desc,uhrzeit.desc&limit=500';
   if (von)       qs += `&datum=gte.${von}`;
   if (bis)       qs += `&datum=lte.${bis}`;
-  if (feld)      qs += `&feld=eq.${encodeURIComponent(feld)}`;
-  if (pfluecker) qs += `&pfluecker=eq.${encodeURIComponent(pfluecker)}`;
+  if (feld)      qs += `&feld_id=eq.${feld}`;
+  if (pfluecker) qs += `&pfluecker_id=eq.${pfluecker}`;
 
   try {
     const data = await sbGet('ernteeintraege', qs);
@@ -1322,14 +1318,19 @@ async function loadProtokoll() {
 }
 
 function fillProtoDropdowns(data) {
-  const felder    = [...new Set(data.map(r => r.feld).filter(Boolean))].sort();
-  const pfluecker = [...new Set(data.map(r => r.pfluecker).filter(Boolean))].sort();
+  // Eindeutige Felder und Pflücker aus den geladenen Daten (als Objekte mit id+name)
+  const felderSeen = new Map(); data.forEach(r => r.feld && felderSeen.set(r.feld.id, r.feld.name));
+  const pflSeen    = new Map(); data.forEach(r => r.pfluecker && pflSeen.set(r.pfluecker.id, r.pfluecker.name));
   const curFeld = document.getElementById('proto_feld').value;
   const curPfl  = document.getElementById('proto_pfluecker').value;
   document.getElementById('proto_feld').innerHTML =
-    `<option value="">Alle Felder</option>` + felder.map(f => `<option ${f===curFeld?'selected':''} value="${esc(f)}">${esc(f)}</option>`).join('');
+    `<option value="">Alle Felder</option>` +
+    [...felderSeen.entries()].sort((a,b)=>a[1].localeCompare(b[1]))
+      .map(([id,name]) => `<option ${id==curFeld?'selected':''} value="${id}">${esc(name)}</option>`).join('');
   document.getElementById('proto_pfluecker').innerHTML =
-    `<option value="">Alle Pflücker</option>` + pfluecker.map(p => `<option ${p===curPfl?'selected':''} value="${esc(p)}">${esc(p)}</option>`).join('');
+    `<option value="">Alle Pflücker</option>` +
+    [...pflSeen.entries()].sort((a,b)=>a[1].localeCompare(b[1]))
+      .map(([id,name]) => `<option ${id==curPfl?'selected':''} value="${id}">${esc(name)}</option>`).join('');
 }
 
 function qualBadge(q) {
@@ -1346,12 +1347,12 @@ function renderProtokollTable(data) {
   const rows = data.map(r => `<tr>
     <td style="white-space:nowrap">${esc(r.datum||'–')}</td>
     <td style="color:var(--dim);font-size:13px">${esc(r.uhrzeit||'–')}</td>
-    <td style="font-weight:600">${esc(r.pfluecker||'–')}</td>
-    <td>${esc(r.feld||'–')}</td>
-    <td style="color:var(--dim)">${esc(r.sorte||'–')}</td>
-    <td style="color:var(--dim);font-size:13px">${esc(r.korbtyp||'–')}</td>
+    <td style="font-weight:600">${esc(r.pfluecker?.name||'–')}</td>
+    <td>${esc(r.feld?.name||'–')}</td>
+    <td style="color:var(--dim)">${esc(r.sorte?.name||'–')}</td>
+    <td style="color:var(--dim);font-size:13px">${esc(r.gebinde?.label||'–')}</td>
     <td style="font-weight:600;font-family:monospace">${r.gewicht_kg != null ? parseFloat(r.gewicht_kg).toFixed(1)+' kg' : '–'}</td>
-    <td style="color:var(--dim);font-family:monospace;font-size:12px">${r.etiketten_nr != null ? '#'+r.etiketten_nr : '–'}</td>
+    <td style="color:var(--dim);font-family:monospace;font-size:12px">${r.etiketten_id != null ? '#'+r.etiketten_id : '–'}</td>
     <td><div class="actions">
       <button class="btn-icon" onclick="openProtoEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
       <button class="btn-icon del proto-del-btn" onclick="deleteProtoEntry(${r.id})" data-tip="Eintrag löschen">🗑</button>
@@ -1374,22 +1375,22 @@ function openProtoEdit(id) {
   // Daten aus dem DOM holen: Da wir keine Cache-Kopie der Protokoll-Daten haben,
   // holen wir den Eintrag direkt aus Supabase
   protoEditId = id;
-  sbGet('ernteeintraege', `id=eq.${id}&select=id,datum,uhrzeit,pfluecker,feld,sorte,korbtyp,gewicht_kg,etiketten_nr&limit=1`)
+  sbGet('ernteeintraege', `id=eq.${id}&select=id,datum,uhrzeit,pfluecker_id,feld_id,sorte_id,gebinde_id,gewicht_kg&limit=1`)
     .then(rows => {
       if (!rows.length) return;
       const r = rows[0];
-      document.getElementById('pe_datum').value        = r.datum || '';
-      document.getElementById('pe_uhrzeit').value      = r.uhrzeit || '';
-      document.getElementById('pe_pfluecker').value    = r.pfluecker || '';
-      document.getElementById('pe_feld').value         = r.feld || '';
-      document.getElementById('pe_sorte').value        = r.sorte || '';
-      document.getElementById('pe_korbtyp').value      = r.korbtyp || '';
-      document.getElementById('pe_gewicht').value      = r.gewicht_kg != null ? r.gewicht_kg : '';
-      // Datalists befüllen
-      document.getElementById('pe_pfluecker_dl').innerHTML = cache.mitarbeiter.map(m=>`<option value="${esc(m.name)}">`).join('');
-      document.getElementById('pe_feld_dl').innerHTML      = cache.felder.map(f=>`<option value="${esc(f.name)}">`).join('');
-      document.getElementById('pe_sorte_dl').innerHTML     = cache.sorten.map(s=>`<option value="${esc(s.name)}">`).join('');
-      document.getElementById('pe_korb_dl').innerHTML      = cache.gebinde.map(g=>`<option value="${esc(g.label)}">`).join('');
+      document.getElementById('pe_datum').value   = r.datum || '';
+      document.getElementById('pe_uhrzeit').value = r.uhrzeit || '';
+      document.getElementById('pe_gewicht').value = r.gewicht_kg != null ? r.gewicht_kg : '';
+      // Selects befüllen und aktuellen Wert setzen
+      const opt = (arr, valKey, labelKey, cur) =>
+        `<option value="">– bitte wählen –</option>` +
+        arr.map(x => `<option value="${x[valKey]}" ${x[valKey]==cur?'selected':''}>${esc(x[labelKey])}</option>`).join('');
+      document.getElementById('pe_pfluecker_id').innerHTML = opt(cache.mitarbeiter, 'id', 'name',  r.pfluecker_id);
+      document.getElementById('pe_feld_id').innerHTML      = opt(cache.felder,      'id', 'name',  r.feld_id);
+      document.getElementById('pe_sorte_id').innerHTML     = `<option value="">– keine –</option>` +
+        cache.sorten.map(s => `<option value="${s.id}" ${s.id==r.sorte_id?'selected':''}>${esc(s.name)}</option>`).join('');
+      document.getElementById('pe_gebinde_id').innerHTML   = opt(cache.gebinde,     'id', 'label', r.gebinde_id);
       document.getElementById('protoEditOverlay').classList.remove('hidden');
       document.getElementById('pe_gewicht').focus();
     })
@@ -1409,15 +1410,14 @@ async function saveProtoEdit() {
   if (isNaN(gewicht) || gewicht <= 0) { alert('Bitte gültiges Gewicht eingeben.'); return; }
   const uhrzeit = document.getElementById('pe_uhrzeit').value || null;
   const stunde  = uhrzeit ? parseInt(uhrzeit.split(':')[0]) : null;
+  const intVal = id => { const v = document.getElementById(id).value; return v ? parseInt(v) : null; };
   const data = {
-    datum,
-    uhrzeit,
-    stunde,
-    pfluecker:  document.getElementById('pe_pfluecker').value.trim() || null,
-    feld:       document.getElementById('pe_feld').value.trim()       || null,
-    sorte:      document.getElementById('pe_sorte').value.trim()      || null,
-    korbtyp:    document.getElementById('pe_korbtyp').value.trim()    || null,
-    gewicht_kg: gewicht,
+    datum, uhrzeit, stunde,
+    pfluecker_id: intVal('pe_pfluecker_id'),
+    feld_id:      intVal('pe_feld_id'),
+    sorte_id:     intVal('pe_sorte_id'),
+    gebinde_id:   intVal('pe_gebinde_id'),
+    gewicht_kg:   gewicht,
   };
   try {
     await sbPatch('ernteeintraege', protoEditId, data);
@@ -1476,7 +1476,7 @@ async function loadAuswertung() {
   const bis = document.getElementById('dash_bis').value;
   document.getElementById('tableContainer').innerHTML =
     '<div class="dash-empty">Lade Auswertung…</div>';
-  let qs = 'select=datum,feld,sorte,pfluecker,qualitaet,korbtyp,gewicht_kg,stunde&order=datum.desc&limit=5000';
+  let qs = 'select=datum,stunde,gewicht_kg,pfluecker:pfluecker_id(name),feld:feld_id(name),sorte:sorte_id(name),qualitaet:qualitaet_id(code),gebinde:gebinde_id(label)&order=datum.desc&limit=5000';
   if (von) qs += `&datum=gte.${von}`;
   if (bis) qs += `&datum=lte.${bis}`;
   try {
@@ -1545,17 +1545,17 @@ function renderDashboard(data) {
   const totalKg      = data.reduce((s,r) => s + parseFloat(r.gewicht_kg || 0), 0);
   const totalGebinde = data.length;
   const avgKg        = totalGebinde ? totalKg / totalGebinde : 0;
-  const pflSet       = new Set(data.map(r => r.pfluecker));
-  const feldSet      = new Set(data.map(r => r.feld));
+  const pflSet       = new Set(data.map(r => r.pfluecker?.name).filter(Boolean));
+  const feldSet      = new Set(data.map(r => r.feld?.name).filter(Boolean));
 
   // Heute vs. Vortag für KPI-Trend
   const today = new Date().toISOString().slice(0,10);
   const kgHeute = data.filter(r => r.datum === today).reduce((s,r) => s + parseFloat(r.gewicht_kg||0),0);
 
-  const byFeld      = agg(data, r => r.feld);
-  const byPfluecker = agg(data, r => r.pfluecker);
-  const byQual      = agg(data, r => r.qualitaet);
-  const bySorte     = agg(data, r => r.sorte);
+  const byFeld      = agg(data, r => r.feld?.name);
+  const byPfluecker = agg(data, r => r.pfluecker?.name);
+  const byQual      = agg(data, r => r.qualitaet?.code);
+  const bySorte     = agg(data, r => r.sorte?.name);
   const byTag       = agg(data, r => r.datum).sort((a,b) => b[0].localeCompare(a[0])).slice(0,14);
   const byWoche     = agg(data, r => isoWeek(r.datum)).slice(0,8);
   const byStunde    = agg(data, r => r.stunde != null ? String(r.stunde).padStart(2,'0') + ':00 Uhr' : null)

@@ -763,9 +763,11 @@ let GEBINDE = JSON.parse(localStorage.getItem('sb_gebinde') || 'null') || [
 ];
 
 // Schicht-Kontext (einmalig je Schicht gesetzt, persisted)
-let FELDER_DATA   = JSON.parse(localStorage.getItem('sb_felder_data')   || 'null') || [];
-let SORTEN_DATA   = JSON.parse(localStorage.getItem('sb_sorten_data')   || 'null') || [];
-let FRUCHTARTEN   = JSON.parse(localStorage.getItem('sb_fruchtarten')   || 'null') || [];
+let FELDER_DATA      = JSON.parse(localStorage.getItem('sb_felder_data')      || 'null') || [];
+let SORTEN_DATA      = JSON.parse(localStorage.getItem('sb_sorten_data')      || 'null') || [];
+let FRUCHTARTEN      = JSON.parse(localStorage.getItem('sb_fruchtarten')      || 'null') || [];
+let PFLÜCKER_DATA    = JSON.parse(localStorage.getItem('sb_pfluecker_data')   || 'null') || [];
+let PFLÜCKER_NR_ID_MAP = JSON.parse(localStorage.getItem('sb_pfluecker_nr_id') || 'null') || {};
 let SCHICHT = {
   feld:      localStorage.getItem('schicht_feld')      || null,
   fruchtart: JSON.parse(localStorage.getItem('schicht_fruchtart') || 'null'),
@@ -773,7 +775,7 @@ let SCHICHT = {
   gebinde:   JSON.parse(localStorage.getItem('schicht_gebinde')   || 'null'),
 };
 let scanMenge = 1.0;
-let state = { pflücker: null, _etikettenNr: null };
+let state = { pflücker: null, _etikettenId: null };
 
 const todayStr = new Date().toISOString().slice(0,10);
 let entries = JSON.parse(localStorage.getItem('ernteEntries')||'[]').filter(e=>e.datum===todayStr);
@@ -826,7 +828,7 @@ function renderProtokoll(){
     <div class="proto-item">
       <div style="flex:1;min-width:0">
         <div class="proto-name">${e.pflücker}</div>
-        <div class="proto-meta">${e.feld}${e.sorte ? ' · ' + e.sorte : ''}${e.etiketten_nr ? ' · <span style="color:var(--accent)">#' + String(e.etiketten_nr).padStart(5,'0') + '</span>' : ''} · ${e.uhrzeit} Uhr</div>
+        <div class="proto-meta">${e.feld}${e.sorte ? ' · ' + e.sorte : ''}${e.etiketten_id ? ' · <span style="color:var(--accent)">#' + String(e.etiketten_id).padStart(5,'0') + '</span>' : ''} · ${e.uhrzeit} Uhr</div>
       </div>
       <div class="proto-actions">
         <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
@@ -1052,20 +1054,39 @@ function sbHeaders() {
   return { 'apikey': CONFIG.key, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
-// Zeilen aus DB → App-Objekt
+// Zeilen aus DB → App-Objekt (IDs + aufgelöste Anzeigenamen)
 function rowToEntry(r) {
-  return { id: r.id, datum: r.datum, uhrzeit: r.uhrzeit, stunde: r.stunde,
-           feld: r.feld, sorte: r.sorte, pflücker: r.pfluecker, reihe: r.reihe,
-           qualität: r.qualitaet, korbtyp: r.korbtyp, gewicht_kg: r.gewicht_kg,
-           etiketten_nr: r.etiketten_nr ?? null };
+  return {
+    id: r.id, datum: r.datum, uhrzeit: r.uhrzeit, stunde: r.stunde, reihe: r.reihe ?? null,
+    gewicht_kg: r.gewicht_kg,
+    // IDs (für DB-Schreibzugriffe)
+    feld_id:      r.feld_id      ?? null,
+    sorte_id:     r.sorte_id     ?? null,
+    pfluecker_id: r.pfluecker_id ?? null,
+    qualitaet_id: r.qualitaet_id ?? null,
+    gebinde_id:   r.gebinde_id   ?? null,
+    etiketten_id: r.etiketten_id ?? null,
+    // Anzeigenamen (aus Metadaten aufgelöst)
+    feld:     FELDER_DATA.find(f => f.id === r.feld_id)?.name        || '–',
+    sorte:    SORTEN_DATA.find(s => s.id === r.sorte_id)?.name       || '',
+    pflücker: PFLÜCKER_DATA.find(p => p.id === r.pfluecker_id)?.name || '–',
+    qualität: QUALITAETEN.find(q => q.id === r.qualitaet_id)?.code   || null,
+    korbtyp:  GEBINDE.find(g => g.id === r.gebinde_id)?.label        || '–',
+  };
 }
 
-// App-Objekt → DB-Zeile
+// App-Objekt → DB-Zeile (nur FK-Spalten)
 function entryToRow(e) {
-  return { id: e.id, datum: e.datum, uhrzeit: e.uhrzeit, stunde: e.stunde,
-           feld: e.feld, sorte: e.sorte, pfluecker: e.pflücker, reihe: e.reihe,
-           qualitaet: e.qualität, korbtyp: e.korbtyp, gewicht_kg: e.gewicht_kg,
-           etiketten_nr: e.etiketten_nr ?? null };
+  return {
+    id: e.id, datum: e.datum, uhrzeit: e.uhrzeit, stunde: e.stunde, reihe: e.reihe ?? null,
+    gewicht_kg:   e.gewicht_kg,
+    feld_id:      e.feld_id      ?? null,
+    sorte_id:     e.sorte_id     ?? null,
+    pfluecker_id: e.pfluecker_id ?? null,
+    qualitaet_id: e.qualitaet_id ?? null,
+    gebinde_id:   e.gebinde_id   ?? null,
+    etiketten_id: e.etiketten_id ?? null,
+  };
 }
 
 function setSyncUI(status, label) {
@@ -1195,11 +1216,14 @@ async function loadMetadata() {
       localStorage.setItem('sb_sorten_data', JSON.stringify(SORTEN_DATA));
     }
     if (pR.ok) {
-      const pData = await pR.json();
-      PFLÜCKER = pData.map(r => r.name);
-      PFLÜCKER_NR_MAP = Object.fromEntries(pData.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.name]));
-      localStorage.setItem('sb_pfluecker',    JSON.stringify(PFLÜCKER));
-      localStorage.setItem('sb_pfluecker_nr', JSON.stringify(PFLÜCKER_NR_MAP));
+      PFLÜCKER_DATA = await pR.json();
+      PFLÜCKER = PFLÜCKER_DATA.map(r => r.name);
+      PFLÜCKER_NR_MAP    = Object.fromEntries(PFLÜCKER_DATA.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.name]));
+      PFLÜCKER_NR_ID_MAP = Object.fromEntries(PFLÜCKER_DATA.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.id]));
+      localStorage.setItem('sb_pfluecker',       JSON.stringify(PFLÜCKER));
+      localStorage.setItem('sb_pfluecker_nr',    JSON.stringify(PFLÜCKER_NR_MAP));
+      localStorage.setItem('sb_pfluecker_nr_id', JSON.stringify(PFLÜCKER_NR_ID_MAP));
+      localStorage.setItem('sb_pfluecker_data',  JSON.stringify(PFLÜCKER_DATA));
     }
     if (qR.ok)  { QUALITAETEN = await qR.json();  localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
     if (gR.ok)  { GEBINDE     = await gR.json();  localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
@@ -1289,10 +1313,10 @@ async function handleScan(raw) {
     scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
   }
 
-  // Offline: Prüfung nicht möglich, trotzdem auswählen mit Warnung
+  // Offline: Prüfung nicht möglich, trotzdem erfassen (ohne etiketten_id)
   if (!CONFIG.url || !CONFIG.key || !navigator.onLine) {
     showToast('⚠️ Offline – keine Duplikat-Prüfung', 'var(--braun)');
-    state._etikettenNr = lfdNr;
+    state._etikettenId = null;
     closeScan();
     await addEntryFromScan(pickerName);
     playBeep();
@@ -1301,38 +1325,50 @@ async function handleScan(raw) {
   }
 
   try {
-    // Etikett in DB nachschlagen
-    const res = await fetch(
-      `${CONFIG.url}/rest/v1/etiketten?pfluecker_nr=eq.${pflueckerNr}&lfd_nr=eq.${lfdNr}&select=id,gescannt_am`,
-      { headers: sbHeaders() }
+    // Atomares PATCH: nur wenn gescannt_am noch NULL → verhindert Race Condition
+    const patchRes = await fetch(
+      `${CONFIG.url}/rest/v1/etiketten?pfluecker_nr=eq.${pflueckerNr}&lfd_nr=eq.${lfdNr}&gescannt_am=is.null`,
+      {
+        method: 'PATCH',
+        headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
+        body: JSON.stringify({ gescannt_am: new Date().toISOString() })
+      }
     );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const rows = await res.json();
+    if (!patchRes.ok) throw new Error(`HTTP ${patchRes.status}`);
+    const patched = await patchRes.json();
 
-    if (!rows.length) {
-      showToast('⚠️ Etikett unbekannt – bitte neu drucken', 'var(--braun)');
+    if (!patched.length) {
+      // 0 Zeilen aktualisiert → Etikett unbekannt oder bereits gescannt
+      const checkRes = await fetch(
+        `${CONFIG.url}/rest/v1/etiketten?pfluecker_nr=eq.${pflueckerNr}&lfd_nr=eq.${lfdNr}&select=id,gescannt_am`,
+        { headers: sbHeaders() }
+      );
+      const rows = await checkRes.json();
+      if (!rows.length) {
+        showToast('⚠️ Etikett unbekannt – bitte neu drucken', 'var(--braun)');
+      } else {
+        const d = new Date(rows[0].gescannt_am).toLocaleString('de-DE',
+          { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+        closeScan(); playErrorBeep();
+        showToast(`❌ Doppelerfassung! Bereits gescannt: ${d}`, 'var(--rot-dunkel)');
+        return;
+      }
       scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
     }
 
-    if (rows[0].gescannt_am) {
-      const d = new Date(rows[0].gescannt_am).toLocaleString('de-DE',
-        { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-      closeScan();
-      playErrorBeep();
-      showToast(`❌ Doppelerfassung! Bereits gescannt: ${d}`, 'var(--rot-dunkel)');
-      return;
-    }
-
-    // Sofort als gescannt markieren (verhindert Doppelscan)
-    await fetch(`${CONFIG.url}/rest/v1/etiketten?id=eq.${rows[0].id}`, {
-      method: 'PATCH',
-      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ gescannt_am: new Date().toISOString() })
-    });
-
-    state._etikettenNr = lfdNr;
+    // Erstscan – etiketten.id für Rückverlinkung merken
+    state._etikettenId = patched[0].id;
     closeScan();
     await addEntryFromScan(pickerName);
+
+    // eintrag_id im Etikett setzen (fire & forget)
+    if (entries[0]?.id) {
+      fetch(`${CONFIG.url}/rest/v1/etiketten?id=eq.${patched[0].id}`, {
+        method: 'PATCH',
+        headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ eintrag_id: entries[0].id })
+      }).catch(() => {});
+    }
     playBeep();
     showScanSuccess(pickerName);
   } catch(e) {
@@ -1565,16 +1601,25 @@ async function addEntryFromScan(pickerName) {
   const { feld, sorte, gebinde } = SCHICHT;
   if (!feld || !gebinde) return;
   const gewicht_kg = gebinde.gewicht_kg != null ? parseFloat((scanMenge * gebinde.gewicht_kg).toFixed(3)) : 0;
+  const feldObj  = FELDER_DATA.find(f => f.name === feld);
+  const sorteObj = SORTEN_DATA.find(s => s.name === sorte);
+  const pflObj   = PFLÜCKER_DATA.find(p => p.name === pickerName);
   const entry = {
     id: Date.now(), datum: todayStr,
     uhrzeit: new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}),
-    stunde: new Date().getHours(),
-    feld, sorte: sorte || '', pflücker: pickerName, reihe: null,
-    qualität: null, korbtyp: gebinde.label,
+    stunde: new Date().getHours(), reihe: null,
+    // IDs
+    feld_id:      feldObj?.id  ?? null,
+    sorte_id:     sorteObj?.id ?? null,
+    pfluecker_id: pflObj?.id   ?? null,
+    gebinde_id:   gebinde.id   ?? null,
+    qualitaet_id: null,
+    etiketten_id: state._etikettenId ?? null,
+    // Anzeigenamen
+    feld, sorte: sorte || '', pflücker: pickerName, qualität: null, korbtyp: gebinde.label,
     gewicht_kg,
-    etiketten_nr: state._etikettenNr || null
   };
-  state._etikettenNr = null;
+  state._etikettenId = null;
   entries.unshift(entry);
   saveEntries(); updateSummary(); renderRecentScans();
   pushEntry(entry);
@@ -1739,7 +1784,7 @@ function renderRecentScans() {
     <div class="proto-item">
       <div style="flex:1;min-width:0">
         <div class="proto-name">${e.pflücker}</div>
-        <div class="proto-meta">${e.korbtyp || ''} · ${e.feld}${e.etiketten_nr ? ' · <span style="color:var(--accent)">#' + String(e.etiketten_nr).padStart(5,'0') + '</span>' : ''} · ${e.uhrzeit} Uhr</div>
+        <div class="proto-meta">${e.korbtyp || ''} · ${e.feld}${e.etiketten_id ? ' · <span style="color:var(--accent)">#' + String(e.etiketten_id).padStart(5,'0') + '</span>' : ''} · ${e.uhrzeit} Uhr</div>
       </div>
       <div class="proto-actions">
         <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
