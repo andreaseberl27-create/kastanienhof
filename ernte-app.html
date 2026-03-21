@@ -1149,12 +1149,10 @@ async function syncFromSupabase() {
   try {
     await flushPending();
     const dbEntries = await loadFromSupabase(todayStr);
-    // Merge: DB + lokale Einträge (die noch nicht in DB sind)
+    // Nach erfolgreichem Sync ist die DB die einzige Wahrheitsquelle
+    entries = dbEntries;
+    // Lokal speichern (andere Tage behalten)
     const localAll  = JSON.parse(localStorage.getItem('ernteEntries') || '[]');
-    const dbIds     = new Set(dbEntries.map(e => e.id));
-    const onlyLocal = localAll.filter(e => e.datum === todayStr && !dbIds.has(e.id)).map(rehydrateEntry);
-    entries = [...dbEntries, ...onlyLocal].sort((a, b) => b.id - a.id);
-    // Lokal speichern
     const otherDays = localAll.filter(e => e.datum !== todayStr);
     localStorage.setItem('ernteEntries', JSON.stringify([...entries, ...otherDays]));
     updateSummary();
