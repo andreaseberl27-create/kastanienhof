@@ -782,13 +782,14 @@ let GEBINDE = JSON.parse(localStorage.getItem('sb_gebinde') || 'null') || [
 ];
 
 // Schicht-Kontext (einmalig je Schicht gesetzt, persisted)
-let FELDER_DATA  = JSON.parse(localStorage.getItem('sb_felder_data')  || 'null') || [];
-let SORTEN_DATA  = JSON.parse(localStorage.getItem('sb_sorten_data')  || 'null') || [];
+let FELDER_DATA   = JSON.parse(localStorage.getItem('sb_felder_data')   || 'null') || [];
+let SORTEN_DATA   = JSON.parse(localStorage.getItem('sb_sorten_data')   || 'null') || [];
+let FRUCHTARTEN   = JSON.parse(localStorage.getItem('sb_fruchtarten')   || 'null') || [];
 let SCHICHT = {
-  feld:     localStorage.getItem('schicht_feld')    || null,
-  sorte:    localStorage.getItem('schicht_sorte')   || null,
-  qualität: localStorage.getItem('schicht_qual')    || null,
-  gebinde:  JSON.parse(localStorage.getItem('schicht_gebinde') || 'null'),
+  feld:      localStorage.getItem('schicht_feld')      || null,
+  fruchtart: JSON.parse(localStorage.getItem('schicht_fruchtart') || 'null'),
+  sorte:     localStorage.getItem('schicht_sorte')     || null,
+  gebinde:   JSON.parse(localStorage.getItem('schicht_gebinde')   || 'null'),
 };
 let scanMenge = 1.0;
 let state = { pflücker: null, _etikettenNr: null };
@@ -1191,12 +1192,13 @@ async function loadMetadata() {
   if (!CONFIG.url || !CONFIG.key) return;
   try {
     const headers = sbHeaders();
-    const [fR, sR, pR, qR, gR] = await Promise.all([
+    const [fR, sR, pR, qR, gR, faR] = await Promise.all([
       fetch(`${CONFIG.url}/rest/v1/felder?aktiv=eq.true&order=name`,             {headers}),
       fetch(`${CONFIG.url}/rest/v1/sorten?aktiv=eq.true&order=name`,             {headers}),
       fetch(`${CONFIG.url}/rest/v1/pfluecker?aktiv=eq.true&order=name`,          {headers}),
       fetch(`${CONFIG.url}/rest/v1/qualitaeten?aktiv=eq.true&order=sort_order`,  {headers}),
       fetch(`${CONFIG.url}/rest/v1/gebinde?aktiv=eq.true&order=sort_order`,      {headers}),
+      fetch(`${CONFIG.url}/rest/v1/fruchtarten?aktiv=eq.true&order=sort_order`,  {headers}),
     ]);
     if (fR.ok) {
       FELDER_DATA = await fR.json();
@@ -1217,8 +1219,20 @@ async function loadMetadata() {
       localStorage.setItem('sb_pfluecker',    JSON.stringify(PFLÜCKER));
       localStorage.setItem('sb_pfluecker_nr', JSON.stringify(PFLÜCKER_NR_MAP));
     }
-    if (qR.ok) { QUALITAETEN = await qR.json(); localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
-    if (gR.ok) { GEBINDE     = await gR.json(); localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
+    if (qR.ok)  { QUALITAETEN = await qR.json();  localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
+    if (gR.ok)  { GEBINDE     = await gR.json();  localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
+    if (faR.ok) {
+      FRUCHTARTEN = await faR.json();
+      localStorage.setItem('sb_fruchtarten', JSON.stringify(FRUCHTARTEN));
+      // Fruchtart im SCHICHT nachschärfen falls Feld bereits gesetzt aber Fruchtart noch null
+      if (SCHICHT.feld && !SCHICHT.fruchtart) {
+        const feldObj = FELDER_DATA.find(f => f.name === SCHICHT.feld);
+        if (feldObj?.fruchtart_id) {
+          SCHICHT.fruchtart = FRUCHTARTEN.find(f => f.id === feldObj.fruchtart_id) || null;
+          saveSchicht();
+        }
+      }
+    }
     // Update context strip with fresh data
     updateContextStrip();
     // If setup sheet is open, re-render it
@@ -1539,15 +1553,15 @@ function showScanSuccess(name) {
 }
 
 async function addEntryFromScan(pickerName) {
-  const { feld, sorte, qualität, gebinde } = SCHICHT;
-  if (!feld || !sorte || !qualität || !gebinde) return;
+  const { feld, sorte, gebinde } = SCHICHT;
+  if (!feld || !gebinde) return;
   const gewicht_kg = gebinde.gewicht_kg != null ? parseFloat((scanMenge * gebinde.gewicht_kg).toFixed(3)) : 0;
   const entry = {
     id: Date.now(), datum: todayStr,
     uhrzeit: new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}),
     stunde: new Date().getHours(),
-    feld, sorte, pflücker: pickerName, reihe: null,
-    qualität, korbtyp: gebinde.label,
+    feld, sorte: sorte || '', pflücker: pickerName, reihe: null,
+    qualität: null, korbtyp: gebinde.label,
     gewicht_kg,
     etiketten_nr: state._etikettenNr || null
   };
@@ -1558,11 +1572,7 @@ async function addEntryFromScan(pickerName) {
 }
 
 function startScanOrWarn() {
-  const { feld, sorte, qualität, gebinde } = SCHICHT;
-  if (!feld || !sorte || !qualität || !gebinde) {
-    openSetup();
-    return;
-  }
+  if (!SCHICHT.feld || !SCHICHT.gebinde) { openSetup(); return; }
   openScan();
 }
 
@@ -1579,28 +1589,30 @@ function selectMengeCustom(m) {
 }
 
 function saveSchicht() {
-  localStorage.setItem('schicht_feld',    SCHICHT.feld    || '');
-  localStorage.setItem('schicht_sorte',   SCHICHT.sorte   || '');
-  localStorage.setItem('schicht_qual',    SCHICHT.qualität || '');
-  localStorage.setItem('schicht_gebinde', JSON.stringify(SCHICHT.gebinde));
+  localStorage.setItem('schicht_feld',      SCHICHT.feld      || '');
+  localStorage.setItem('schicht_fruchtart', JSON.stringify(SCHICHT.fruchtart));
+  localStorage.setItem('schicht_sorte',     SCHICHT.sorte     || '');
+  localStorage.setItem('schicht_gebinde',   JSON.stringify(SCHICHT.gebinde));
 }
 
 function updateContextStrip() {
-  const { feld, sorte, qualität, gebinde } = SCHICHT;
-  const isSet = feld && sorte && qualität && gebinde;
-  const mainEl = document.getElementById('ctxMain');
-  const subEl  = document.getElementById('ctxSub');
+  const { feld, fruchtart, sorte, gebinde } = SCHICHT;
+  const isSet = !!(feld && gebinde);
+  const mainEl  = document.getElementById('ctxMain');
+  const subEl   = document.getElementById('ctxSub');
   const heroBtn = document.getElementById('scanHeroBtn');
   const heroSub = document.getElementById('heroSub');
   if (isSet) {
-    mainEl.textContent = (feld || '') + '  ·  ' + (sorte || '');
-    subEl.textContent  = (qualität ? '⭐ ' + qualität : '') + '  ·  ' + (gebinde?.label || '');
-    if (heroBtn) { heroBtn.classList.remove('disabled'); }
-    if (heroSub) heroSub.textContent = (gebinde?.gewicht_kg != null ? gebinde.gewicht_kg + ' kg / Stück' : 'Manuelles Gewicht');
+    const emoji = fruchtart?.emoji ? fruchtart.emoji + ' ' : '';
+    const sorteStr = sorte ? '  ·  ' + sorte : '';
+    mainEl.textContent = emoji + feld + sorteStr;
+    subEl.textContent  = gebinde.label + (gebinde.gewicht_kg != null ? '  ·  ' + gebinde.gewicht_kg + ' kg/Stk' : '  ·  Manuell');
+    heroBtn?.classList.remove('disabled');
+    if (heroSub) heroSub.textContent = gebinde.gewicht_kg != null ? gebinde.gewicht_kg + ' kg / Stück' : 'Manuelles Gewicht';
   } else {
     mainEl.textContent = 'Schicht einrichten';
-    subEl.textContent  = 'Feld · Sorte · Qualität · Gebinde wählen ⟶';
-    if (heroBtn) { heroBtn.classList.add('disabled'); }
+    subEl.textContent  = 'Feld und Gebinde wählen ⟶';
+    heroBtn?.classList.add('disabled');
     if (heroSub) heroSub.textContent = 'Erst Schicht einrichten ↑';
   }
 }
@@ -1616,68 +1628,95 @@ function closeSetup() {
 
 function renderSetupSheet() {
   const el = document.getElementById('setupContent');
-  // Determine which sorten to show (filtered by feld's fruchtart_id)
+
+  // Sorten gefiltert nach aktuell gewählter Fruchtart
   let filteredSorten = SORTEN;
-  if (SCHICHT.feld && FELDER_DATA.length && SORTEN_DATA.length) {
-    const feldObj = FELDER_DATA.find(f => f.name === SCHICHT.feld);
-    if (feldObj?.fruchtart_id) {
-      filteredSorten = SORTEN_DATA.filter(s => s.fruchtart_id === feldObj.fruchtart_id).map(s => s.name);
-    }
+  if (SCHICHT.fruchtart && SORTEN_DATA.length) {
+    const fs = SORTEN_DATA.filter(s => s.fruchtart_id === SCHICHT.fruchtart.id).map(s => s.name);
+    if (fs.length) filteredSorten = fs;
   }
 
-  function chips(items, selected, onclick) {
+  function chips(items, selected, fn) {
     return items.map(item => {
       const active = item === selected ? ' active-orange' : '';
-      return `<div class="chip${active}" onclick="${onclick}('${item.replace(/'/g,"\\'")}', this)" style="margin-bottom:4px">${item}</div>`;
+      return `<div class="chip${active}" onclick="${fn}('${item.replace(/'/g,"\\'")}', this)" style="margin-bottom:4px">${item}</div>`;
     }).join('');
   }
-  function qualChips() {
-    return QUALITAETEN.map(q => {
-      const active = q.code === SCHICHT.qualität ? ' active-orange' : '';
-      return `<div class="chip${active}" onclick="selectSchichtQual('${q.code}', this)">${q.emoji} ${q.label}</div>`;
+  function fruchtartChips() {
+    if (!FRUCHTARTEN.length) return '<span style="color:var(--text-dim);font-size:13px">Keine Fruchtarten geladen</span>';
+    return FRUCHTARTEN.map(f => {
+      const active = SCHICHT.fruchtart?.id === f.id ? ' active-orange' : '';
+      return `<div class="chip${active}" onclick="selectSchichtFruchtart(${f.id})">${f.emoji} ${f.name}</div>`;
     }).join('');
   }
   function gebindeChips() {
     return GEBINDE.map(g => {
-      const key = g.label;
-      const active = SCHICHT.gebinde?.label === key ? ' active-orange' : '';
+      const active = SCHICHT.gebinde?.label === g.label ? ' active-orange' : '';
       const sub = g.gewicht_kg != null ? g.gewicht_kg + ' kg' : 'Manuell';
-      return `<div class="chip${active}" onclick="selectSchichtGebinde('${key.replace(/'/g,"\\'")}', this)">${key}<br><span style="font-size:10px;opacity:.7">${sub}</span></div>`;
+      return `<div class="chip${active}" onclick="selectSchichtGebinde('${g.label.replace(/'/g,"\\'")}', this)">${g.label}<br><span style="font-size:10px;opacity:.7">${sub}</span></div>`;
     }).join('');
   }
 
+  const fruchtartBlock = SCHICHT.feld ? `
+    <div class="setup-section">
+      <div class="section-title" style="display:flex;align-items:center;gap:6px">🌱 Fruchtart
+        <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;margin-left:2px">(änderbar falls falsch)</span>
+      </div>
+      <div class="chip-wrap">${fruchtartChips()}</div>
+    </div>` : '';
+
+  const sorteBlock = SCHICHT.feld ? `
+    <div class="setup-section">
+      <div class="section-title" style="display:flex;align-items:center;gap:6px">🍓 Sorte
+        <span style="font-size:10px;color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;margin-left:2px">(optional)</span>
+      </div>
+      <div class="chip-wrap">
+        <div class="chip${!SCHICHT.sorte ? ' active-orange' : ''}" onclick="selectSchichtSorte(null)" style="margin-bottom:4px">– keine –</div>
+        ${filteredSorten.length ? chips(filteredSorten, SCHICHT.sorte, 'selectSchichtSorte') : '<span style="color:var(--text-dim);font-size:13px">Keine Sorten für diese Fruchtart</span>'}
+      </div>
+    </div>` : '';
+
+  const canClose = SCHICHT.feld && SCHICHT.gebinde;
   el.innerHTML = `
     <div class="setup-section">
-      <div class="section-title">🗺️ Feld</div>
-      <div class="chip-wrap" id="setupFelder">${chips(FELDER, SCHICHT.feld, 'selectSchichtFeld')}</div>
+      <div class="section-title">🗺️ Feld <span style="color:var(--rot-hell);font-size:11px">*</span></div>
+      <div class="chip-wrap">${chips(FELDER, SCHICHT.feld, 'selectSchichtFeld')}</div>
     </div>
+    ${fruchtartBlock}
+    ${sorteBlock}
     <div class="setup-section">
-      <div class="section-title">🍓 Sorte</div>
-      <div class="chip-wrap" id="setupSorten">${filteredSorten.length ? chips(filteredSorten, SCHICHT.sorte, 'selectSchichtSorte') : '<span style="color:var(--text-dim);font-size:13px">Erst Feld wählen</span>'}</div>
-    </div>
-    <div class="setup-section">
-      <div class="section-title">✨ Qualität</div>
-      <div class="chip-wrap">${qualChips()}</div>
-    </div>
-    <div class="setup-section">
-      <div class="section-title">🧺 Gebinde (Standard)</div>
+      <div class="section-title">🧺 Gebinde (Standard) <span style="color:var(--rot-hell);font-size:11px">*</span></div>
       <div class="chip-wrap">${gebindeChips()}</div>
     </div>
-    <button onclick="closeSetup()" style="width:100%;padding:14px;background:var(--rot);border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;cursor:pointer;margin-top:6px">✅ Übernehmen</button>
+    <button onclick="${canClose ? 'closeSetup()' : ''}"
+      style="width:100%;padding:14px;background:${canClose ? 'var(--rot)' : 'rgba(255,255,255,.08)'};border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:${canClose ? '#fff' : 'var(--text-dim)'};cursor:${canClose ? 'pointer' : 'default'};margin-top:6px">
+      ${canClose ? '✅ Übernehmen' : '⚠️ Feld und Gebinde wählen'}
+    </button>
   `;
 }
 
 function selectSchichtFeld(name) {
-  SCHICHT.feld = name; SCHICHT.sorte = null; saveSchicht(); renderSetupSheet();
+  SCHICHT.feld = name;
+  SCHICHT.sorte = null;
+  // Fruchtart automatisch aus FELDER_DATA ermitteln
+  const feldObj = FELDER_DATA.find(f => f.name === name);
+  SCHICHT.fruchtart = feldObj?.fruchtart_id
+    ? (FRUCHTARTEN.find(f => f.id === feldObj.fruchtart_id) || null)
+    : null;
+  saveSchicht(); renderSetupSheet();
+}
+function selectSchichtFruchtart(id) {
+  SCHICHT.fruchtart = FRUCHTARTEN.find(f => f.id === id) || null;
+  SCHICHT.sorte = null;
+  saveSchicht(); renderSetupSheet();
 }
 function selectSchichtSorte(name) {
-  SCHICHT.sorte = name; saveSchicht(); renderSetupSheet();
-}
-function selectSchichtQual(code) {
-  SCHICHT.qualität = code; saveSchicht(); renderSetupSheet();
+  SCHICHT.sorte = name; // null = "keine"
+  saveSchicht(); renderSetupSheet();
 }
 function selectSchichtGebinde(label) {
-  SCHICHT.gebinde = GEBINDE.find(g => g.label === label) || null; saveSchicht(); renderSetupSheet();
+  SCHICHT.gebinde = GEBINDE.find(g => g.label === label) || null;
+  saveSchicht(); renderSetupSheet();
 }
 
 function renderRecentScans() {

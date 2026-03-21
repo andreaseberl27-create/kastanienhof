@@ -221,6 +221,61 @@ tbody tr:hover { background:#fafafa; }
   bottom:auto; top:calc(100% + 1px);
   border-top-color:transparent; border-bottom-color:#1e293b;
 }
+
+/* ── Dashboard ── */
+.table-card.dash-mode { background:transparent; border-radius:0; box-shadow:none; overflow:visible; }
+.dash-filter {
+  background:var(--surface); border-radius:12px; box-shadow:var(--shadow);
+  padding:14px 18px; margin-bottom:20px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.dash-filter.hidden { display:none; }
+.dash-filter label { font-size:12px; font-weight:600; color:var(--dim); white-space:nowrap; }
+.dash-filter .form-input { width:auto; padding:7px 10px; font-size:13px; }
+.dash-quick { display:flex; gap:6px; flex-wrap:wrap; }
+.btn-quick {
+  padding:6px 12px; border:1px solid var(--border); border-radius:6px;
+  font-size:12px; font-weight:600; cursor:pointer; background:var(--bg);
+  color:var(--dim); transition:all .15s;
+}
+.btn-quick:hover, .btn-quick.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:20px; }
+.kpi-card {
+  background:var(--surface); border-radius:12px; box-shadow:var(--shadow);
+  padding:18px 20px;
+}
+.kpi-label { font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+.kpi-value { font-size:28px; font-weight:700; color:var(--text); line-height:1; }
+.kpi-value small { font-size:14px; font-weight:500; color:var(--dim); }
+.kpi-sub { font-size:12px; color:var(--dim); margin-top:4px; }
+.dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+@media(max-width:900px){ .dash-grid { grid-template-columns:1fr; } }
+.dash-card {
+  background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:20px;
+}
+.dash-card-title {
+  font-size:13px; font-weight:700; color:var(--text); margin-bottom:14px;
+  display:flex; align-items:center; gap:6px;
+}
+.dash-card-title span { font-size:16px; }
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.bar-row:last-child { margin-bottom:0; }
+.bar-label { font-size:12px; color:var(--text); min-width:100px; max-width:130px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+.bar-track { flex:1; background:#f1f5f9; border-radius:99px; height:20px; position:relative; overflow:hidden; }
+.bar-fill { height:100%; border-radius:99px; background:var(--primary); transition:width .4s ease; min-width:2px; }
+.bar-fill.green { background:var(--green); }
+.bar-fill.blue  { background:#3b82f6; }
+.bar-fill.orange{ background:var(--orange); }
+.bar-val { position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  font-size:11px; font-weight:700; color:var(--text); white-space:nowrap; }
+.dash-empty { text-align:center; padding:24px; color:var(--dim); font-size:13px; }
+.dash-toggle { display:flex; gap:6px; margin-bottom:12px; }
+.btn-toggle {
+  padding:4px 10px; border:1px solid var(--border); border-radius:6px;
+  font-size:11px; font-weight:600; cursor:pointer; background:var(--bg); color:var(--dim);
+}
+.btn-toggle.active { background:var(--text); color:#fff; border-color:var(--text); }
 </style>
 </head>
 <body>
@@ -281,6 +336,10 @@ tbody tr:hover { background:#fafafa; }
           data-tip="Körbe / Behälter mit Gewicht oder Manuell-Eingabe">
           <span class="icon">📦</span> Gebinde
         </div>
+        <div class="nav-item" id="nav-auswertung" onclick="navigate('auswertung')"
+          data-tip="Ernte-Auswertungen · Kilo und Gebinde je Feld, Tag, Pflücker …">
+          <span class="icon">📊</span> Auswertung
+        </div>
       </nav>
       <div class="sidebar-user">
         <div style="font-size:11px;color:var(--sidebar-dim);margin-bottom:2px" id="sidebarBetrieb"></div>
@@ -298,7 +357,21 @@ tbody tr:hover { background:#fafafa; }
         <div class="page-title" id="pageTitle">Mitarbeiter</div>
         <button class="btn-add" id="addBtn" onclick="openAdd()" data-tip="Neuen Eintrag anlegen">+ Neu anlegen</button>
       </div>
-      <div class="table-card">
+      <!-- Dashboard-Filter (nur bei Auswertung sichtbar) -->
+      <div class="dash-filter hidden" id="dashFilter">
+        <label>Von</label>
+        <input class="form-input" id="dash_von" type="date" onchange="loadAuswertung()">
+        <label>Bis</label>
+        <input class="form-input" id="dash_bis" type="date" onchange="loadAuswertung()">
+        <div class="dash-quick">
+          <button class="btn-quick" onclick="setDashRange('today')">Heute</button>
+          <button class="btn-quick" onclick="setDashRange('week')">Diese Woche</button>
+          <button class="btn-quick" onclick="setDashRange('month')">Dieser Monat</button>
+          <button class="btn-quick active" id="dash_q_all" onclick="setDashRange('all')">Gesamt</button>
+        </div>
+      </div>
+
+      <div class="table-card" id="tableCard">
         <div id="tableContainer"></div>
       </div>
     </main>
@@ -392,7 +465,8 @@ const SECTION_CONFIG = {
   fruchtarten:  { table:'fruchtarten',  label:'Fruchtarten',  order:'sort_order' },
   sorten:       { table:'sorten',       label:'Sorten',       order:'name' },
   qualitaeten:  { table:'qualitaeten',  label:'Qualitäten',   order:'sort_order' },
-  gebinde:      { table:'gebinde',      label:'Gebinde',      order:'sort_order' }
+  gebinde:      { table:'gebinde',      label:'Gebinde',      order:'sort_order' },
+  auswertung:   { table:'ernteeintraege', label:'Auswertung', order:'datum', special:true }
 };
 
 // ── SUPABASE HELPERS ─────────────────────────────────────────
@@ -511,13 +585,24 @@ async function navigate(section) {
     cfg.label + `<small id="rowCount"></small>`;
   document.getElementById('tableContainer').innerHTML =
     '<table><thead><tr><th colspan="10" style="text-align:center;padding:24px;color:var(--dim)">Lade…</th></tr></thead></table>';
-  // Nur Admin darf neue Betriebsleiter anlegen
-  const addBtn = document.getElementById('addBtn');
-  addBtn.style.display = (section === 'betriebsleiter' && currentUserRole !== 'admin') ? 'none' : '';
+  const addBtn   = document.getElementById('addBtn');
+  const dashFilter = document.getElementById('dashFilter');
+  const tableCard  = document.getElementById('tableCard');
+  if (section === 'auswertung') {
+    addBtn.style.display = 'none';
+    dashFilter.classList.remove('hidden');
+    tableCard.classList.add('dash-mode');
+  } else {
+    dashFilter.classList.add('hidden');
+    tableCard.classList.remove('dash-mode');
+    // Nur Admin darf neue Betriebsleiter anlegen
+    addBtn.style.display = (section === 'betriebsleiter' && currentUserRole !== 'admin') ? 'none' : '';
+  }
   await loadSection(section);
 }
 
 async function loadSection(section) {
+  if (section === 'auswertung') { await loadAuswertung(); return; }
   if (section === 'betriebsleiter') {
     cache.betriebsleiter = await sbGet('betrieb_mitglieder', 'order=username&select=betrieb_id,user_id,rolle,username');
     renderSection(section);
@@ -1068,6 +1153,175 @@ async function printLabels() {
   }
   closeQR();
   setTimeout(() => window.print(), 400);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function setDashRange(preset) {
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  document.querySelectorAll('.btn-quick').forEach(b => b.classList.remove('active'));
+  switch(preset) {
+    case 'today':
+      document.getElementById('dash_von').value = fmt(today);
+      document.getElementById('dash_bis').value = fmt(today);
+      break;
+    case 'week': {
+      const mon = new Date(today); mon.setDate(today.getDate() - today.getDay() + 1);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      document.getElementById('dash_von').value = fmt(mon);
+      document.getElementById('dash_bis').value = fmt(sun);
+      break;
+    }
+    case 'month': {
+      const first = new Date(today.getFullYear(), today.getMonth(), 1);
+      const last  = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      document.getElementById('dash_von').value = fmt(first);
+      document.getElementById('dash_bis').value = fmt(last);
+      break;
+    }
+    case 'all':
+      document.getElementById('dash_von').value = '';
+      document.getElementById('dash_bis').value = '';
+      break;
+  }
+  document.querySelector(`.btn-quick[onclick="setDashRange('${preset}')"]`)?.classList.add('active');
+  loadAuswertung();
+}
+
+async function loadAuswertung() {
+  const von = document.getElementById('dash_von').value;
+  const bis = document.getElementById('dash_bis').value;
+  document.getElementById('tableContainer').innerHTML =
+    '<div class="dash-empty">Lade Auswertung…</div>';
+  let qs = 'select=datum,feld,sorte,pfluecker,qualitaet,korbtyp,gewicht_kg,stunde&order=datum.desc&limit=5000';
+  if (von) qs += `&datum=gte.${von}`;
+  if (bis) qs += `&datum=lte.${bis}`;
+  try {
+    const data = await sbGet('ernteeintraege', qs);
+    const countEl = document.getElementById('rowCount');
+    if (countEl) countEl.textContent = ` · ${data.length} Einträge`;
+    renderDashboard(data);
+  } catch(e) {
+    document.getElementById('tableContainer').innerHTML =
+      `<div class="dash-empty" style="color:var(--red)">Fehler: ${esc(e.message)}</div>`;
+  }
+}
+
+function agg(data, keyFn) {
+  const map = {};
+  data.forEach(r => {
+    const k = keyFn(r) || '–';
+    if (!map[k]) map[k] = { kg: 0, gebinde: 0 };
+    map[k].kg      += parseFloat(r.gewicht_kg || 0);
+    map[k].gebinde += 1;
+  });
+  return Object.entries(map).sort((a,b) => b[1].kg - a[1].kg);
+}
+
+function isoWeek(dateStr) {
+  const d = new Date(dateStr);
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1);
+  const diff = (d - startOfW1) / 86400000;
+  const week = Math.floor(diff / 7) + 1;
+  return `KW ${String(week).padStart(2,'0')} / ${d.getFullYear()}`;
+}
+
+function barRows(entries, metric, color='') {
+  if (!entries.length) return `<div class="dash-empty">Keine Daten</div>`;
+  const maxVal = Math.max(...entries.map(([,v]) => v[metric]));
+  return entries.map(([label, v]) => {
+    const val  = v[metric];
+    const pct  = maxVal ? (val / maxVal * 100).toFixed(1) : 0;
+    const disp = metric === 'kg' ? val.toFixed(1) + ' kg' : val + ' Geb.';
+    return `<div class="bar-row">
+      <div class="bar-label" title="${esc(label)}">${esc(label)}</div>
+      <div class="bar-track">
+        <div class="bar-fill ${color}" style="width:${pct}%"></div>
+        <span class="bar-val">${disp}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function dashCard(icon, title, content) {
+  return `<div class="dash-card">
+    <div class="dash-card-title"><span>${icon}</span>${esc(title)}</div>
+    ${content}
+  </div>`;
+}
+
+function renderDashboard(data) {
+  if (!data.length) {
+    document.getElementById('tableContainer').innerHTML =
+      '<div class="dash-empty" style="padding:48px">Keine Ernteeinträge im gewählten Zeitraum.</div>';
+    return;
+  }
+
+  const totalKg      = data.reduce((s,r) => s + parseFloat(r.gewicht_kg || 0), 0);
+  const totalGebinde = data.length;
+  const avgKg        = totalGebinde ? totalKg / totalGebinde : 0;
+  const pflSet       = new Set(data.map(r => r.pfluecker));
+  const feldSet      = new Set(data.map(r => r.feld));
+
+  // Heute vs. Vortag für KPI-Trend
+  const today = new Date().toISOString().slice(0,10);
+  const kgHeute = data.filter(r => r.datum === today).reduce((s,r) => s + parseFloat(r.gewicht_kg||0),0);
+
+  const byFeld      = agg(data, r => r.feld);
+  const byPfluecker = agg(data, r => r.pfluecker);
+  const byQual      = agg(data, r => r.qualitaet);
+  const bySorte     = agg(data, r => r.sorte);
+  const byTag       = agg(data, r => r.datum).sort((a,b) => b[0].localeCompare(a[0])).slice(0,14);
+  const byWoche     = agg(data, r => isoWeek(r.datum)).slice(0,8);
+  const byStunde    = agg(data, r => r.stunde != null ? String(r.stunde).padStart(2,'0') + ':00 Uhr' : null)
+                        .sort((a,b) => a[0].localeCompare(b[0]));
+
+  const kpiHTML = `<div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Gesamt Ernte</div>
+      <div class="kpi-value">${totalKg.toFixed(1)}<small> kg</small></div>
+      <div class="kpi-sub">${kgHeute > 0 ? 'Heute: ' + kgHeute.toFixed(1) + ' kg' : 'Heute: keine Einträge'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Gebinde gesamt</div>
+      <div class="kpi-value">${totalGebinde}<small> Stk.</small></div>
+      <div class="kpi-sub">Ø ${avgKg.toFixed(2)} kg / Gebinde</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Aktive Pflücker</div>
+      <div class="kpi-value">${pflSet.size}</div>
+      <div class="kpi-sub">Ø ${(totalKg / pflSet.size).toFixed(1)} kg / Person</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Felder</div>
+      <div class="kpi-value">${feldSet.size}</div>
+      <div class="kpi-sub">Zeitraum: ${data[data.length-1]?.datum || '–'} – ${data[0]?.datum || '–'}</div>
+    </div>
+  </div>`;
+
+  const row1 = `<div class="dash-grid">
+    ${dashCard('🗺️', 'Ernte nach Feld (kg)', barRows(byFeld, 'kg'))}
+    ${dashCard('👤', 'Ernte nach Pflücker (kg)', barRows(byPfluecker, 'kg', 'blue'))}
+  </div>`;
+
+  const row2 = `<div class="dash-grid">
+    ${dashCard('📅', 'Ernte nach Tag (letzte 14 Tage)', barRows(byTag, 'kg'))}
+    ${dashCard('📆', 'Ernte nach Kalenderwoche', barRows(byWoche, 'kg', 'green'))}
+  </div>`;
+
+  const row3 = `<div class="dash-grid">
+    ${dashCard('⭐', 'Verteilung nach Qualität', barRows(byQual, 'gebinde', 'orange'))}
+    ${dashCard('🌱', 'Ernte nach Sorte (kg)', barRows(bySorte, 'kg'))}
+  </div>`;
+
+  const row4 = byStunde.length ? `<div class="dash-grid">
+    ${dashCard('🕐', 'Gebinde nach Tageszeit (Stunde)', barRows(byStunde, 'gebinde', 'blue'))}
+    ${dashCard('🗺️', 'Gebinde nach Feld', barRows(byFeld, 'gebinde'))}
+  </div>` : '';
+
+  document.getElementById('tableContainer').innerHTML = kpiHTML + row1 + row2 + row3 + row4;
 }
 
 // ── PASSWORT ÄNDERN ──────────────────────────────────────────
