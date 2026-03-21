@@ -673,6 +673,8 @@ const PRESET_DOMAIN = '@kastanienhof.local';
 let FELDER   = JSON.parse(localStorage.getItem('sb_felder')      || 'null') || ['Feld A','Feld B','Feld C','Feld Nord','Feld Süd'];
 let SORTEN   = JSON.parse(localStorage.getItem('sb_sorten')      || 'null') || ['Elsanta','Honeoye','Senga Sengana','Malling Centenary','Rumba','Polka'];
 let PFLÜCKER = JSON.parse(localStorage.getItem('sb_pfluecker')   || 'null') || ['Anna','Bernd','Carlos','Daria','Erika','Fatima','Georg','Hana'];
+// nr → name lookup für QR-Scanner: { 42: 'Anna', 7: 'Bernd', … }
+let PFLÜCKER_NR_MAP = JSON.parse(localStorage.getItem('sb_pfluecker_nr') || 'null') || {};
 let QUALITAETEN = JSON.parse(localStorage.getItem('sb_qualitaeten') || 'null') || [
   {code:'A', label:'Klasse A', emoji:'🟢', sort_order:1},
   {code:'B', label:'Klasse B', emoji:'🟡', sort_order:2},
@@ -851,7 +853,13 @@ async function loadMetadata() {
     ]);
     if (fR.ok) { FELDER      = (await fR.json()).map(r => r.name); localStorage.setItem('sb_felder',      JSON.stringify(FELDER)); }
     if (sR.ok) { SORTEN      = (await sR.json()).map(r => r.name); localStorage.setItem('sb_sorten',      JSON.stringify(SORTEN)); }
-    if (pR.ok) { PFLÜCKER    = (await pR.json()).map(r => r.name); localStorage.setItem('sb_pfluecker',   JSON.stringify(PFLÜCKER)); }
+    if (pR.ok) {
+      const pData = await pR.json();
+      PFLÜCKER = pData.map(r => r.name);
+      PFLÜCKER_NR_MAP = Object.fromEntries(pData.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.name]));
+      localStorage.setItem('sb_pfluecker',    JSON.stringify(PFLÜCKER));
+      localStorage.setItem('sb_pfluecker_nr', JSON.stringify(PFLÜCKER_NR_MAP));
+    }
     if (qR.ok) { QUALITAETEN = await qR.json();                    localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
     if (gR.ok) { GEBINDE     = await gR.json();                    localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
     // UI neu aufbauen mit frischen Daten
@@ -901,12 +909,13 @@ function addEntry(){
     id:Date.now(), datum:todayStr,
     uhrzeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}),
     stunde:new Date().getHours(),
-    feld,sorte,pflücker,reihe,qualität,korbtyp:state.korbtyp,gewicht_kg:parseFloat(gewicht)
+    feld,sorte,pflücker,reihe,qualität,korbtyp:state.korbtyp,gewicht_kg:parseFloat(gewicht),
+    etiketten_nr: state._etikettenNr || null
   });
   saveEntries(); updateSummary(); updatePfluckerHeute();
   pushEntry(entries[0]);
   showToast(`✅ ${parseFloat(gewicht).toFixed(1)} kg · ${feld} · ${sorte}`);
-  state={...state,qualität:null,korbtyp:null,gewicht:'',numpadOpen:false};
+  state={...state,qualität:null,korbtyp:null,gewicht:'',numpadOpen:false,_etikettenNr:null};
   document.querySelectorAll('.qual-btn,.korb-btn').forEach(el=>el.classList.remove('active'));
   updateWeightDisplay(); closeNumpad();
 }
@@ -1295,14 +1304,17 @@ async function openScan() {
 function closeScan() {
   if (scanAF)     { cancelAnimationFrame(scanAF); scanAF = null; }
   if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  scanLocked = false;
   document.getElementById('scanOverlay').classList.add('hidden');
 }
+
+let scanLocked = false;
 
 function scanFrame() {
   const video  = document.getElementById('scanVideo');
   const canvas = document.getElementById('scanCanvas');
   if (!scanStream) return;
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+  if (video.readyState === video.HAVE_ENOUGH_DATA && !scanLocked) {
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
@@ -1310,19 +1322,72 @@ function scanFrame() {
     const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
     if (code) {
-      const name  = code.data.trim();
-      const match = PFLÜCKER.find(p => p.toLowerCase() === name.toLowerCase());
-      if (match) {
-        selectPfluecker(match);
-        closeScan();
-        showToast('✅ ' + match + ' ausgewählt');
-        return;
-      } else {
-        showToast('⚠️ Unbekannt: ' + name, 'var(--braun)');
-      }
+      scanLocked = true;
+      handleScan(code.data.trim());
+      return;
     }
   }
   scanAF = requestAnimationFrame(scanFrame);
+}
+
+async function handleScan(raw) {
+  const nrMatch = raw.match(/^(\d+)\/(\d+)$/);
+  if (!nrMatch) {
+    showToast('⚠️ Ungültiger QR-Code', 'var(--braun)');
+    scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
+  }
+  const pflueckerNr = parseInt(nrMatch[1]);
+  const lfdNr       = parseInt(nrMatch[2]);
+  const pickerName  = PFLÜCKER_NR_MAP[pflueckerNr];
+  if (!pickerName) {
+    showToast(`⚠️ Unbekannte Mitarbeiter-Nr: ${pflueckerNr}`, 'var(--braun)');
+    scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
+  }
+
+  // Offline: Prüfung nicht möglich, trotzdem auswählen mit Warnung
+  if (!CONFIG.url || !CONFIG.key || !navigator.onLine) {
+    showToast('⚠️ Offline – keine Duplikat-Prüfung', 'var(--braun)');
+    state._etikettenNr = lfdNr;
+    selectPfluecker(pickerName);
+    closeScan(); return;
+  }
+
+  try {
+    // Etikett in DB nachschlagen
+    const res = await fetch(
+      `${CONFIG.url}/rest/v1/etiketten?pfluecker_nr=eq.${pflueckerNr}&lfd_nr=eq.${lfdNr}&select=id,gescannt_am`,
+      { headers: sbHeaders() }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+
+    if (!rows.length) {
+      showToast('⚠️ Etikett unbekannt – bitte neu drucken', 'var(--braun)');
+      scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
+    }
+
+    if (rows[0].gescannt_am) {
+      const d = new Date(rows[0].gescannt_am).toLocaleString('de-DE',
+        { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      showToast(`❌ Doppelerfassung! Bereits gescannt: ${d}`, 'var(--rot-dunkel)');
+      scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
+    }
+
+    // Sofort als gescannt markieren (verhindert Doppelscan)
+    await fetch(`${CONFIG.url}/rest/v1/etiketten?id=eq.${rows[0].id}`, {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ gescannt_am: new Date().toISOString() })
+    });
+
+    state._etikettenNr = lfdNr;
+    selectPfluecker(pickerName);
+    closeScan();
+    showToast(`✅ ${pickerName} · Etik. #${String(lfdNr).padStart(3,'0')}`);
+  } catch(e) {
+    showToast('❌ Fehler bei Prüfung: ' + e.message, 'var(--rot-dunkel)');
+    scanLocked = false; scanAF = requestAnimationFrame(scanFrame);
+  }
 }
 
 // ── QR-CODES DRUCKEN ──────────────────────────────────────────

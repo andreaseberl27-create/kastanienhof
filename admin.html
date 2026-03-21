@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ErntcTracker · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #f1f5f9; --surface: #fff; --border: #e2e8f0;
+  --text: #1e293b; --dim: #64748b;
+  --primary: #e8244a; --primary-dk: #c01a39;
+  --green: #16a34a; --red: #dc2626; --orange: #ea580c;
+  --sidebar: #1e293b; --sidebar-dim: #94a3b8;
+  --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.15);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* ── Login ── */
+#loginPage {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:var(--sidebar);
+}
+.login-card {
+  background:var(--surface); border-radius:16px; padding:40px; width:360px;
+  box-shadow:var(--shadow-lg);
+}
+.login-logo { font-size:32px; margin-bottom:4px; }
+.login-title { font-size:20px; font-weight:700; margin-bottom:4px; }
+.login-sub { font-size:13px; color:var(--dim); margin-bottom:28px; }
+.form-group { margin-bottom:16px; }
+.form-label { display:block; font-size:12px; font-weight:600; color:var(--dim);
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.form-input {
+  width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+  font-size:14px; font-family:inherit; color:var(--text); outline:none; transition:border-color .15s;
+}
+.form-input:focus { border-color:var(--primary); }
+.btn-primary {
+  width:100%; padding:11px; background:var(--primary); color:#fff; border:none;
+  border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:background .15s;
+}
+.btn-primary:hover { background:var(--primary-dk); }
+.login-error { font-size:13px; color:var(--red); margin-top:10px; min-height:18px; }
+
+/* ── App shell ── */
+#appPage { display:none; }
+.app-layout { display:flex; min-height:100vh; }
+
+/* ── Sidebar ── */
+aside {
+  width:240px; background:var(--sidebar); position:fixed; top:0; left:0;
+  height:100vh; display:flex; flex-direction:column; z-index:10;
+}
+.sidebar-logo {
+  padding:24px 20px 20px; border-bottom:1px solid rgba(255,255,255,.08);
+  font-size:18px; font-weight:700; color:#fff; display:flex; align-items:center; gap:10px;
+}
+.sidebar-logo span { font-size:22px; }
+.sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
+.nav-item {
+  display:flex; align-items:center; gap:10px; padding:10px 20px;
+  color:var(--sidebar-dim); font-size:14px; font-weight:500; cursor:pointer;
+  transition:background .15s, color .15s; border-radius:0;
+}
+.nav-item:hover { background:rgba(255,255,255,.05); color:#fff; }
+.nav-item.active { background:rgba(232,36,74,.15); color:#fff; border-left:3px solid var(--primary); }
+.nav-item .icon { font-size:16px; width:20px; text-align:center; }
+.sidebar-user {
+  padding:16px 20px; border-top:1px solid rgba(255,255,255,.08);
+  font-size:13px; color:var(--sidebar-dim);
+}
+.sidebar-username { color:#fff; font-weight:600; margin-bottom:6px; }
+.btn-logout {
+  background:rgba(255,255,255,.08); border:none; color:var(--sidebar-dim);
+  padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:background .15s;
+}
+.btn-logout:hover { background:rgba(255,255,255,.15); color:#fff; }
+
+/* ── Main content ── */
+main { margin-left:240px; flex:1; padding:32px; }
+.page-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
+}
+.page-title { font-size:22px; font-weight:700; }
+.page-title small { font-size:13px; font-weight:400; color:var(--dim); margin-left:8px; }
+.btn-add {
+  background:var(--primary); color:#fff; border:none; padding:9px 18px;
+  border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:background .15s;
+  display:flex; align-items:center; gap:6px;
+}
+.btn-add:hover { background:var(--primary-dk); }
+
+/* ── Table ── */
+.table-card { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+table { width:100%; border-collapse:collapse; }
+thead { background:#f8fafc; }
+th { padding:12px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--dim);
+  text-transform:uppercase; letter-spacing:.8px; border-bottom:1px solid var(--border); }
+td { padding:12px 16px; font-size:14px; border-bottom:1px solid var(--border); }
+tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:#fafafa; }
+.badge {
+  display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
+  border-radius:99px; font-size:11px; font-weight:600;
+}
+.badge-green { background:#dcfce7; color:var(--green); }
+.badge-red { background:#fee2e2; color:var(--red); }
+.badge-nr {
+  font-family:'SF Mono',monospace; background:#f1f5f9; color:var(--dim);
+  padding:2px 8px; border-radius:6px; font-size:13px; font-weight:700;
+}
+.actions { display:flex; gap:6px; }
+.btn-icon {
+  background:none; border:1px solid var(--border); border-radius:6px; padding:5px 9px;
+  font-size:13px; cursor:pointer; color:var(--dim); transition:all .15s;
+}
+.btn-icon:hover { background:var(--bg); color:var(--text); }
+.btn-icon.del:hover { border-color:var(--red); color:var(--red); }
+.btn-icon.qr:hover { border-color:var(--primary); color:var(--primary); }
+.empty-row td { text-align:center; padding:32px; color:var(--dim); font-size:14px; }
+.color-dot { width:14px; height:14px; border-radius:50%; display:inline-block; vertical-align:middle; }
+
+/* ── Modal ── */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.overlay.hidden { display:none; }
+.modal-card {
+  background:var(--surface); border-radius:16px; padding:28px; width:100%;
+  max-width:460px; box-shadow:var(--shadow-lg); max-height:90vh; overflow-y:auto;
+}
+.modal-title { font-size:17px; font-weight:700; margin-bottom:20px; }
+.modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal-grid .full { grid-column:1/-1; }
+.modal-btns { display:flex; gap:10px; margin-top:20px; }
+.btn-save {
+  flex:1; padding:10px; background:var(--primary); color:#fff; border:none;
+  border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;
+}
+.btn-save:hover { background:var(--primary-dk); }
+.btn-cancel {
+  padding:10px 18px; background:var(--bg); color:var(--text); border:1px solid var(--border);
+  border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;
+}
+.form-check { display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer; }
+.form-check input { width:16px; height:16px; accent-color:var(--primary); cursor:pointer; }
+.modal-nr-hint { font-size:12px; color:var(--dim); margin-top:4px; }
+
+/* ── QR Modal ── */
+.qr-modal-card { background:var(--surface); border-radius:16px; padding:28px; width:100%;
+  max-width:520px; box-shadow:var(--shadow-lg); }
+.qr-preview { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0;
+  max-height:300px; overflow-y:auto; padding:4px; }
+.qr-preview-label {
+  border:1px solid var(--border); border-radius:8px; padding:10px;
+  display:flex; align-items:center; gap:10px; font-size:12px;
+  background:#fafafa; width:220px;
+}
+.qr-preview-info .name { font-weight:700; font-size:13px; }
+.qr-preview-info .nr { color:var(--dim); font-family:monospace; }
+.qr-settings { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.qr-settings label { font-size:12px; color:var(--dim); display:block; margin-bottom:4px; }
+
+/* ── Print labels ── */
+#printArea { display:none; }
+@media print {
+  body > * { display:none !important; }
+  #printArea { display:block !important; }
+  @page { margin:8mm; size:A4; }
+}
+.label-sheet { display:flex; flex-wrap:wrap; gap:4mm; align-content:flex-start; }
+.label {
+  width:70mm; height:38mm; border:0.5pt solid #aaa; border-radius:2mm;
+  display:flex; align-items:center; gap:3mm; padding:3mm;
+  font-family:Arial,sans-serif; page-break-inside:avoid; overflow:hidden;
+}
+.label-qr { flex-shrink:0; }
+.label-text { flex:1; min-width:0; }
+.label-name { font-size:10pt; font-weight:bold; line-height:1.2; margin-bottom:2mm; word-break:break-word; }
+.label-ma { font-size:11pt; font-weight:bold; color:#333; }
+.label-lfd { font-size:9pt; color:#666; margin-top:1mm; }
+.label-app { font-size:7pt; color:#aaa; margin-top:2mm; }
+</style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">🍓</div>
+    <div class="login-title">ErntcTracker Admin</div>
+    <div class="login-sub">Betriebsleiter-Bereich</div>
+    <div class="form-group">
+      <label class="form-label">Benutzername</label>
+      <input class="form-input" id="loginUser" type="text" placeholder="name"
+        autocomplete="off" autocorrect="off" autocapitalize="off"
+        onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Passwort</label>
+      <input class="form-input" id="loginPass" type="password"
+        onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="login()">Anmelden</button>
+    <div class="login-error" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="appPage">
+  <div class="app-layout">
+    <aside>
+      <div class="sidebar-logo"><span>🍓</span>ErntcTracker</div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" id="nav-mitarbeiter" onclick="navigate('mitarbeiter')">
+          <span class="icon">👥</span> Mitarbeiter
+        </div>
+        <div class="nav-item" id="nav-felder" onclick="navigate('felder')">
+          <span class="icon">🗺️</span> Felder
+        </div>
+        <div class="nav-item" id="nav-fruchtarten" onclick="navigate('fruchtarten')">
+          <span class="icon">🌱</span> Fruchtarten
+        </div>
+        <div class="nav-item" id="nav-sorten" onclick="navigate('sorten')">
+          <span class="icon">🍓</span> Sorten
+        </div>
+        <div class="nav-item" id="nav-qualitaeten" onclick="navigate('qualitaeten')">
+          <span class="icon">⭐</span> Qualitäten
+        </div>
+        <div class="nav-item" id="nav-gebinde" onclick="navigate('gebinde')">
+          <span class="icon">📦</span> Gebinde
+        </div>
+      </nav>
+      <div class="sidebar-user">
+        <div style="font-size:11px;color:var(--sidebar-dim);margin-bottom:2px" id="sidebarBetrieb"></div>
+        <div class="sidebar-username" id="sidebarUser">–</div>
+        <button class="btn-logout" onclick="logout()">Abmelden</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="page-header">
+        <div class="page-title" id="pageTitle">Mitarbeiter</div>
+        <button class="btn-add" id="addBtn" onclick="openAdd()">+ Neu anlegen</button>
+      </div>
+      <div class="table-card">
+        <div id="tableContainer"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Edit/Add Modal ── -->
+<div class="overlay hidden" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card">
+    <div class="modal-title" id="modalTitle">Eintrag bearbeiten</div>
+    <div id="modalForm"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-save" onclick="saveModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── QR Print Modal ── -->
+<div class="overlay hidden" id="qrOverlay" onclick="if(event.target===this)closeQR()">
+  <div class="qr-modal-card">
+    <div class="modal-title">🏷️ Etiketten drucken</div>
+    <div id="qrEmployeeName" style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--primary)"></div>
+    <div class="qr-settings">
+      <div>
+        <label>Anzahl Etiketten</label>
+        <input class="form-input" id="qrCount" type="number" value="10" min="1" max="200"
+          oninput="updateQRPreview()">
+      </div>
+      <div>
+        <label>Startnummer</label>
+        <input class="form-input" id="qrStart" type="number" value="1" min="1"
+          oninput="updateQRPreview()">
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px">Vorschau (erste 3):</div>
+    <div class="qr-preview" id="qrPreview"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeQR()">Abbrechen</button>
+      <button class="btn-save" onclick="printLabels()">🖨️ Drucken</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Print area (only visible during print) ── -->
+<div id="printArea">
+  <div class="label-sheet" id="labelSheet"></div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const SB_URL    = 'https://xbfhsnsyisvehmonyrxh.supabase.co';
+const SB_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
+const SB_DOMAIN = '@kastanienhof.local';
+
+// ── STATE ────────────────────────────────────────────────────
+let session = null;
+let currentSection = 'mitarbeiter';
+let editId = null;
+let qrEmployee = null;
+
+const cache = { mitarbeiter:[], felder:[], fruchtarten:[], sorten:[], qualitaeten:[], gebinde:[] };
+
+const SECTION_CONFIG = {
+  mitarbeiter:  { table:'pfluecker',    label:'Mitarbeiter',  order:'mitarbeiter_nr' },
+  felder:       { table:'felder',       label:'Felder',       order:'name' },
+  fruchtarten:  { table:'fruchtarten',  label:'Fruchtarten',  order:'sort_order' },
+  sorten:       { table:'sorten',       label:'Sorten',       order:'name' },
+  qualitaeten:  { table:'qualitaeten',  label:'Qualitäten',   order:'sort_order' },
+  gebinde:      { table:'gebinde',      label:'Gebinde',      order:'sort_order' }
+};
+
+// ── SUPABASE HELPERS ─────────────────────────────────────────
+function sbHeaders() {
+  const token = session?.access_token || SB_KEY;
+  return { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+async function sbGet(table, qs='') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: sbHeaders() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+async function sbPost(table, data) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST', headers:{ ...sbHeaders(), 'Prefer':'return=representation' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbPatch(table, id, data) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method:'PATCH', headers:{ ...sbHeaders(), 'Prefer':'return=minimal' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method:'DELETE', headers: sbHeaders()
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function authDomain() {
+  return SB_DOMAIN.startsWith('@') ? SB_DOMAIN : '@' + SB_DOMAIN;
+}
+async function login() {
+  const username = document.getElementById('loginUser').value.trim().toLowerCase();
+  const password = document.getElementById('loginPass').value;
+  const errEl    = document.getElementById('loginErr');
+  const btn      = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Alle Felder ausfüllen.'; return; }
+  btn.textContent = 'Anmelden…'; btn.disabled = true;
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: username + authDomain(), password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Anmeldung fehlgeschlagen');
+    session = data;
+    localStorage.setItem('admin_session', JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, username }));
+    showApp(username);
+  } catch(e) {
+    errEl.textContent = e.message;
+  } finally {
+    btn.textContent = 'Anmelden'; btn.disabled = false;
+  }
+}
+async function logout() {
+  if (!confirm('Abmelden?')) return;
+  try { await fetch(`${SB_URL}/auth/v1/logout`, { method:'POST', headers:sbHeaders() }); } catch {}
+  session = null;
+  localStorage.removeItem('admin_session');
+  document.getElementById('appPage').style.display  = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+}
+async function checkAuth() {
+  const saved = JSON.parse(localStorage.getItem('admin_session') || 'null');
+  if (!saved?.access_token) return;
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST', headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ refresh_token: saved.refresh_token })
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    session = data;
+    localStorage.setItem('admin_session', JSON.stringify({ ...saved, access_token: data.access_token, refresh_token: data.refresh_token }));
+    showApp(saved.username);
+  } catch { localStorage.removeItem('admin_session'); }
+}
+async function showApp(username) {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display   = 'block';
+  document.getElementById('sidebarUser').textContent = username;
+  // Betriebsname laden und anzeigen
+  try {
+    const rows = await sbGet('betriebe', 'select=name&limit=1');
+    document.getElementById('sidebarBetrieb').textContent =
+      rows.length ? '🏡 ' + rows[0].name : '';
+  } catch { /* betriebe noch nicht eingerichtet */ }
+  navigate('mitarbeiter');
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────
+async function navigate(section) {
+  currentSection = section;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + section).classList.add('active');
+  const cfg = SECTION_CONFIG[section];
+  document.getElementById('pageTitle').innerHTML =
+    cfg.label + `<small id="rowCount"></small>`;
+  document.getElementById('tableContainer').innerHTML =
+    '<table><thead><tr><th colspan="10" style="text-align:center;padding:24px;color:var(--dim)">Lade…</th></tr></thead></table>';
+  await loadSection(section);
+}
+
+async function loadSection(section) {
+  // Fruchtarten immer vorladen (für Dropdowns)
+  if (!cache.fruchtarten.length || section === 'fruchtarten') {
+    cache.fruchtarten = await sbGet('fruchtarten', 'order=sort_order');
+  }
+  const cfg = SECTION_CONFIG[section];
+  cache[section] = await sbGet(cfg.table, `order=${cfg.order}`);
+  renderSection(section);
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderSection(section) {
+  const data = cache[section];
+  const el = document.getElementById('tableContainer');
+  const countEl = document.getElementById('rowCount');
+  if (countEl) countEl.textContent = ` · ${data.length} Einträge`;
+
+  const renders = {
+    mitarbeiter: renderMitarbeiter,
+    felder: renderFelder,
+    fruchtarten: renderFruchtarten,
+    sorten: renderSorten,
+    qualitaeten: renderQualitaeten,
+    gebinde: renderGebinde
+  };
+  el.innerHTML = renders[section](data);
+}
+
+function emptyRow(msg='Noch keine Einträge') {
+  return `<tr class="empty-row"><td colspan="10">${msg}</td></tr>`;
+}
+function statusBadge(aktiv) {
+  return aktiv
+    ? '<span class="badge badge-green">● aktiv</span>'
+    : '<span class="badge badge-red">○ inaktiv</span>';
+}
+function fruchtartName(id) {
+  const f = cache.fruchtarten.find(x => x.id === id);
+  return f ? `${f.emoji} ${f.name}` : '–';
+}
+function nrBadge(nr) {
+  return `<span class="badge-nr">MA-${String(nr).padStart(3,'0')}</span>`;
+}
+
+function renderMitarbeiter(data) {
+  return `<table>
+    <thead><tr>
+      <th>Nr.</th><th>Name</th><th>Telefon</th><th>Eintrittsdatum</th><th>Status</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${data.length ? data.map(r => `
+      <tr>
+        <td>${nrBadge(r.mitarbeiter_nr)}</td>
+        <td style="font-weight:600">${esc(r.name)}</td>
+        <td>${r.telefon ? esc(r.telefon) : '<span style="color:var(--dim)">–</span>'}</td>
+        <td>${r.eintrittsdatum ? new Date(r.eintrittsdatum).toLocaleDateString('de-DE') : '<span style="color:var(--dim)">–</span>'}</td>
+        <td>${statusBadge(r.aktiv)}</td>
+        <td><div class="actions">
+          <button class="btn-icon qr" onclick="openQR(${r.id})" title="Etiketten drucken">🏷️</button>
+          <button class="btn-icon"    onclick="openEdit(${r.id})" title="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" title="Löschen">🗑</button>
+        </div></td>
+      </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+function renderFelder(data) {
+  return `<table>
+    <thead><tr>
+      <th>Name</th><th>Fruchtart</th><th>Status</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${data.length ? data.map(r => `
+      <tr>
+        <td style="font-weight:600">${esc(r.name)}</td>
+        <td>${fruchtartName(r.fruchtart_id)}</td>
+        <td>${statusBadge(r.aktiv)}</td>
+        <td><div class="actions">
+          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+        </div></td>
+      </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+function renderFruchtarten(data) {
+  return `<table>
+    <thead><tr>
+      <th>Emoji</th><th>Name</th><th>Farbe</th><th>Reihenfolge</th><th>Status</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${data.length ? data.map(r => `
+      <tr>
+        <td style="font-size:20px">${r.emoji}</td>
+        <td style="font-weight:600">${esc(r.name)}</td>
+        <td><span class="color-dot" style="background:${r.farbe}"></span> <span style="font-family:monospace;font-size:13px">${r.farbe}</span></td>
+        <td>${r.sort_order}</td>
+        <td>${statusBadge(r.aktiv)}</td>
+        <td><div class="actions">
+          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+        </div></td>
+      </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+function renderSorten(data) {
+  return `<table>
+    <thead><tr>
+      <th>Name</th><th>Fruchtart</th><th>Status</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${data.length ? data.map(r => `
+      <tr>
+        <td style="font-weight:600">${esc(r.name)}</td>
+        <td>${fruchtartName(r.fruchtart_id)}</td>
+        <td>${statusBadge(r.aktiv)}</td>
+        <td><div class="actions">
+          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+        </div></td>
+      </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+function renderQualitaeten(data) {
+  return `<table>
+    <thead><tr>
+      <th>Code</th><th>Bezeichnung</th><th>Emoji</th><th>Reihenfolge</th><th>Status</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${data.length ? data.map(r => `
+      <tr>
+        <td><span class="badge-nr">${esc(r.code)}</span></td>
+        <td style="font-weight:600">${esc(r.label)}</td>
+        <td style="font-size:18px">${r.emoji}</td>
+        <td>${r.sort_order}</td>
+        <td>${statusBadge(r.aktiv)}</td>
+        <td><div class="actions">
+          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+        </div></td>
+      </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+function renderGebinde(data) {
+  return `<table>
+    <thead><tr>
+      <th>Bezeichnung</th><th>Gewicht</th><th>Reihenfolge</th><th>Status</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${data.length ? data.map(r => `
+      <tr>
+        <td style="font-weight:600">${esc(r.label)}</td>
+        <td>${r.gewicht_kg != null ? r.gewicht_kg + ' kg' : '<span style="color:var(--dim)">Manuell</span>'}</td>
+        <td>${r.sort_order}</td>
+        <td>${statusBadge(r.aktiv)}</td>
+        <td><div class="actions">
+          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+        </div></td>
+      </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+// ── MODAL: ADD / EDIT ─────────────────────────────────────────
+function fruchtartOptions(selectedId) {
+  return cache.fruchtarten.map(f =>
+    `<option value="${f.id}" ${f.id === selectedId ? 'selected' : ''}>${f.emoji} ${esc(f.name)}</option>`
+  ).join('');
+}
+
+function getFormHTML(section, r) {
+  const v = r || {};
+  const aktiv = r ? r.aktiv : true;
+  const fa = `<div class="full"><label class="form-label">Fruchtart</label>
+    <select class="form-input" id="f_fruchtart_id">
+      <option value="">– bitte wählen –</option>${fruchtartOptions(v.fruchtart_id)}
+    </select></div>`;
+  const statusField = `<div class="full"><label class="form-check">
+    <input type="checkbox" id="f_aktiv" ${aktiv ? 'checked' : ''}> Aktiv
+  </label></div>`;
+
+  switch(section) {
+    case 'mitarbeiter': return `<div class="modal-grid">
+      ${r?.mitarbeiter_nr != null ? `<div class="full">
+        <label class="form-label">Mitarbeiter-Nr.</label>
+        <div class="badge-nr" style="display:inline-block">MA-${String(r.mitarbeiter_nr).padStart(3,'0')}</div>
+        <div class="modal-nr-hint">Wird automatisch vergeben und kann nicht geändert werden.</div>
+      </div>` : `<div class="full"><div class="modal-nr-hint" style="padding:8px;background:#f0fdf4;border-radius:6px;color:var(--green)">
+        ✓ Mitarbeiter-Nr. wird automatisch vergeben.
+      </div></div>`}
+      <div class="full"><label class="form-label">Name *</label>
+        <input class="form-input" id="f_name" value="${esc(v.name||'')}"></div>
+      <div><label class="form-label">Telefon</label>
+        <input class="form-input" id="f_telefon" value="${esc(v.telefon||'')}"></div>
+      <div><label class="form-label">Eintrittsdatum</label>
+        <input class="form-input" id="f_eintrittsdatum" type="date" value="${v.eintrittsdatum||''}"></div>
+      ${statusField}
+    </div>`;
+
+    case 'felder': return `<div class="modal-grid">
+      <div class="full"><label class="form-label">Name *</label>
+        <input class="form-input" id="f_name" value="${esc(v.name||'')}"></div>
+      ${fa}${statusField}
+    </div>`;
+
+    case 'fruchtarten': return `<div class="modal-grid">
+      <div><label class="form-label">Name *</label>
+        <input class="form-input" id="f_name" value="${esc(v.name||'')}"></div>
+      <div><label class="form-label">Emoji</label>
+        <input class="form-input" id="f_emoji" value="${esc(v.emoji||'🍓')}" maxlength="4"></div>
+      <div class="full"><label class="form-label">Farbe (Hex)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="f_farbe" value="${esc(v.farbe||'#e8244a')}" style="flex:1">
+          <input type="color" id="f_farbe_picker" value="${v.farbe||'#e8244a'}"
+            style="width:38px;height:38px;border:1px solid var(--border);border-radius:6px;cursor:pointer"
+            oninput="document.getElementById('f_farbe').value=this.value">
+        </div></div>
+      <div><label class="form-label">Reihenfolge</label>
+        <input class="form-input" id="f_sort_order" type="number" value="${v.sort_order||0}"></div>
+      ${statusField}
+    </div>`;
+
+    case 'sorten': return `<div class="modal-grid">
+      <div class="full"><label class="form-label">Name *</label>
+        <input class="form-input" id="f_name" value="${esc(v.name||'')}"></div>
+      ${fa}${statusField}
+    </div>`;
+
+    case 'qualitaeten': return `<div class="modal-grid">
+      <div><label class="form-label">Code *</label>
+        <input class="form-input" id="f_code" value="${esc(v.code||'')}" maxlength="5"></div>
+      <div><label class="form-label">Emoji</label>
+        <input class="form-input" id="f_emoji" value="${esc(v.emoji||'⚪')}"></div>
+      <div class="full"><label class="form-label">Bezeichnung *</label>
+        <input class="form-input" id="f_label" value="${esc(v.label||'')}"></div>
+      <div><label class="form-label">Reihenfolge</label>
+        <input class="form-input" id="f_sort_order" type="number" value="${v.sort_order||0}"></div>
+      ${statusField}
+    </div>`;
+
+    case 'gebinde': return `<div class="modal-grid">
+      <div class="full"><label class="form-label">Bezeichnung *</label>
+        <input class="form-input" id="f_label" value="${esc(v.label||'')}"></div>
+      <div><label class="form-label">Gewicht (kg)</label>
+        <input class="form-input" id="f_gewicht_kg" type="number" step="0.1"
+          placeholder="leer = Manuell" value="${v.gewicht_kg != null ? v.gewicht_kg : ''}"></div>
+      <div><label class="form-label">Reihenfolge</label>
+        <input class="form-input" id="f_sort_order" type="number" value="${v.sort_order||0}"></div>
+      ${statusField}
+    </div>`;
+  }
+}
+
+function openAdd() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = SECTION_CONFIG[currentSection].label + ' anlegen';
+  document.getElementById('modalForm').innerHTML = getFormHTML(currentSection, null);
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  document.querySelector('#modalForm input:not([type=checkbox]):not([type=color])')?.focus();
+}
+
+function openEdit(id) {
+  editId = id;
+  const record = cache[currentSection].find(r => r.id === id);
+  if (!record) return;
+  document.getElementById('modalTitle').textContent = SECTION_CONFIG[currentSection].label + ' bearbeiten';
+  document.getElementById('modalForm').innerHTML = getFormHTML(currentSection, record);
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+  editId = null;
+}
+
+function getFieldVal(id, fallback=null) {
+  const el = document.getElementById(id);
+  if (!el) return fallback;
+  if (el.type === 'checkbox') return el.checked;
+  return el.value.trim() || fallback;
+}
+
+function buildRecord(section) {
+  switch(section) {
+    case 'mitarbeiter': return {
+      name:           getFieldVal('f_name'),
+      telefon:        getFieldVal('f_telefon'),
+      eintrittsdatum: getFieldVal('f_eintrittsdatum'),
+      aktiv:          getFieldVal('f_aktiv', true)
+    };
+    case 'felder': return {
+      name:         getFieldVal('f_name'),
+      fruchtart_id: getFieldVal('f_fruchtart_id') ? parseInt(getFieldVal('f_fruchtart_id')) : null,
+      aktiv:        getFieldVal('f_aktiv', true)
+    };
+    case 'fruchtarten': return {
+      name:       getFieldVal('f_name'),
+      emoji:      getFieldVal('f_emoji', '🍓'),
+      farbe:      getFieldVal('f_farbe', '#e8244a'),
+      sort_order: parseInt(getFieldVal('f_sort_order', '0')),
+      aktiv:      getFieldVal('f_aktiv', true)
+    };
+    case 'sorten': return {
+      name:         getFieldVal('f_name'),
+      fruchtart_id: getFieldVal('f_fruchtart_id') ? parseInt(getFieldVal('f_fruchtart_id')) : null,
+      aktiv:        getFieldVal('f_aktiv', true)
+    };
+    case 'qualitaeten': return {
+      code:       getFieldVal('f_code'),
+      label:      getFieldVal('f_label'),
+      emoji:      getFieldVal('f_emoji', '⚪'),
+      sort_order: parseInt(getFieldVal('f_sort_order', '0')),
+      aktiv:      getFieldVal('f_aktiv', true)
+    };
+    case 'gebinde': {
+      const kg = getFieldVal('f_gewicht_kg');
+      return {
+        label:      getFieldVal('f_label'),
+        gewicht_kg: kg !== null ? parseFloat(kg) : null,
+        sort_order: parseInt(getFieldVal('f_sort_order', '0')),
+        aktiv:      getFieldVal('f_aktiv', true)
+      };
+    }
+  }
+}
+
+async function saveModal() {
+  const data = buildRecord(currentSection);
+  if (!data.name && !data.label && !data.code) {
+    alert('Pflichtfelder ausfüllen.'); return;
+  }
+  const cfg = SECTION_CONFIG[currentSection];
+  try {
+    if (editId) {
+      await sbPatch(cfg.table, editId, data);
+    } else {
+      await sbPost(cfg.table, data);
+    }
+    closeModal();
+    await loadSection(currentSection);
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+async function del(id) {
+  if (!confirm('Eintrag wirklich löschen?')) return;
+  const cfg = SECTION_CONFIG[currentSection];
+  try {
+    await sbDelete(cfg.table, id);
+    await loadSection(currentSection);
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ── QR PRINT ─────────────────────────────────────────────────
+async function openQR(id) {
+  qrEmployee = cache.mitarbeiter.find(r => r.id === id);
+  if (!qrEmployee) return;
+  document.getElementById('qrEmployeeName').textContent =
+    `${qrEmployee.name} · MA-${String(qrEmployee.mitarbeiter_nr).padStart(3,'0')}`;
+  document.getElementById('qrCount').value = 10;
+  document.getElementById('qrStart').value = '…';
+  document.getElementById('qrOverlay').classList.remove('hidden');
+  // Nächste lfd_nr automatisch ermitteln
+  try {
+    const rows = await sbGet('etiketten',
+      `pfluecker_nr=eq.${qrEmployee.mitarbeiter_nr}&order=lfd_nr.desc&limit=1&select=lfd_nr`);
+    document.getElementById('qrStart').value = rows.length ? rows[0].lfd_nr + 1 : 1;
+  } catch {
+    document.getElementById('qrStart').value = 1;
+  }
+  updateQRPreview();
+}
+
+function closeQR() {
+  document.getElementById('qrOverlay').classList.add('hidden');
+  qrEmployee = null;
+}
+
+function qrContent(nr, lfd) { return `${nr}/${lfd}`; }
+function fmtNr(n, pad=3) { return String(n).padStart(pad, '0'); }
+
+function buildLabelHTML(emp, lfdNr) {
+  const nr  = emp.mitarbeiter_nr;
+  const qr  = qrContent(nr, lfdNr);
+  return { qr, name: emp.name, ma: `MA-${fmtNr(nr)}`, lfd: `#${fmtNr(lfdNr)}` };
+}
+
+function updateQRPreview() {
+  if (!qrEmployee) return;
+  const count = Math.min(parseInt(document.getElementById('qrCount').value) || 1, 200);
+  const start = parseInt(document.getElementById('qrStart').value) || 1;
+  const preview = document.getElementById('qrPreview');
+  preview.innerHTML = '';
+  const shown = Math.min(count, 3);
+  for (let i = 0; i < shown; i++) {
+    const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
+    const card = document.createElement('div');
+    card.className = 'qr-preview-label';
+    const qrDiv = document.createElement('div');
+    card.appendChild(qrDiv);
+    const info = document.createElement('div');
+    info.className = 'qr-preview-info';
+    info.innerHTML = `<div class="name">${esc(name)}</div><div class="nr">${ma} · ${lfd}</div>`;
+    card.appendChild(info);
+    preview.appendChild(card);
+    new QRCode(qrDiv, { text: qr, width: 56, height: 56, correctLevel: QRCode.CorrectLevel.M });
+  }
+  if (count > 3) {
+    const more = document.createElement('div');
+    more.style.cssText = 'font-size:13px;color:var(--dim);padding:8px;align-self:center';
+    more.textContent = `+ ${count - 3} weitere Etiketten…`;
+    preview.appendChild(more);
+  }
+}
+
+async function printLabels() {
+  if (!qrEmployee) return;
+  const count = Math.min(parseInt(document.getElementById('qrCount').value) || 1, 200);
+  const start = parseInt(document.getElementById('qrStart').value) || 1;
+
+  // Etiketten in DB anlegen (unique constraint verhindert Doppelungen)
+  const rows = Array.from({ length: count }, (_, i) => ({
+    pfluecker_nr: qrEmployee.mitarbeiter_nr,
+    lfd_nr: start + i
+  }));
+  try {
+    await fetch(`${SB_URL}/rest/v1/etiketten`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), 'Prefer': 'return=minimal,resolution=ignore-duplicates' },
+      body: JSON.stringify(rows)
+    });
+  } catch(e) {
+    if (!confirm(`Etiketten konnten nicht gespeichert werden:\n${e.message}\n\nTrotzdem drucken?`)) return;
+  }
+
+  // Druckseite aufbauen
+  const sheet = document.getElementById('labelSheet');
+  sheet.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
+    const label = document.createElement('div');
+    label.className = 'label';
+    const qrDiv = document.createElement('div');
+    qrDiv.className = 'label-qr';
+    label.appendChild(qrDiv);
+    const text = document.createElement('div');
+    text.className = 'label-text';
+    text.innerHTML = `<div class="label-name">${esc(name)}</div>
+      <div class="label-ma">${ma}</div>
+      <div class="label-lfd">Etik. ${lfd}</div>
+      <div class="label-app">ErntcTracker</div>`;
+    label.appendChild(text);
+    sheet.appendChild(label);
+    new QRCode(qrDiv, { text: qr, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.M });
+  }
+  closeQR();
+  setTimeout(() => window.print(), 400);
+}
+
+// ── UTILS ────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+checkAuth();
+</script>
+</body>
+</html>
