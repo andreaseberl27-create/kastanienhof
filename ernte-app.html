@@ -633,11 +633,10 @@
 
 <!-- ══ EINSTELLUNGEN ══ -->
 <div class="page" id="page-einstellungen">
-  <div class="section" style="padding-top:16px;">
-    <div class="section-title">👤 Angemeldeter Nutzer</div>
-  </div>
-  <div id="userSection" style="display:none">
-    <div class="status-card" style="margin-bottom:0">
+
+  <!-- Angemeldeter Nutzer -->
+  <div id="userSection" style="display:none;padding:16px 16px 0">
+    <div class="status-card" style="margin:0">
       <div style="font-size:22px">👤</div>
       <div style="flex:1">
         <div class="status-text" id="loggedInUser">–</div>
@@ -646,60 +645,53 @@
       <button onclick="logoutUser()" style="background:rgba(232,36,74,.15);border:1.5px solid rgba(232,36,74,.3);color:var(--rot-hell);border-radius:10px;padding:7px 12px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Abmelden</button>
     </div>
   </div>
-  <div id="noUserSection" style="padding:4px 16px 12px">
+  <div id="noUserSection" style="padding:16px 16px 0">
     <div style="font-size:12px;color:var(--text-dim)">Nicht angemeldet</div>
   </div>
 
-  <div class="section" style="padding-top:4px;">
-    <div class="section-title">⚙️ Supabase Konfiguration</div>
-  </div>
-
-  <div class="status-card">
-    <div class="status-dot" id="statusDot"></div>
-    <div>
-      <div class="status-text" id="statusText">Nicht konfiguriert</div>
-      <div class="status-sub" id="statusSub">Supabase URL und Anon Key eingeben</div>
+  <!-- Verbindungsstatus -->
+  <div style="padding:12px 16px 0">
+    <div class="status-card" style="margin:0">
+      <div class="status-dot" id="statusDot"></div>
+      <div style="flex:1">
+        <div class="status-text" id="statusText">Nicht konfiguriert</div>
+        <div class="status-sub" id="statusSub">Supabase URL und Key prüfen</div>
+      </div>
     </div>
   </div>
 
-  <div class="settings-group">
-    <label class="settings-label">Project URL</label>
-    <input class="settings-input" id="inputUrl" type="url" placeholder="https://xyz.supabase.co" autocomplete="off" autocorrect="off" spellcheck="false">
-  </div>
-  <div class="settings-group">
-    <label class="settings-label">Publishable Key</label>
-    <input class="settings-input" id="inputKey" type="password" placeholder="eyJhbGciOiJIUzI1NiIs…" autocomplete="off">
-  </div>
-  <div class="settings-group">
-    <label class="settings-label">E-Mail-Domain für Accounts</label>
-    <input class="settings-input" id="inputDomain" type="text" placeholder="@kastanienhof.local" autocomplete="off" autocorrect="off" spellcheck="false">
-    <div style="font-size:11px;color:var(--text-dim);margin-top:6px">Login: <span style="color:var(--accent)" id="domainPreview">anna@kastanienhof.local</span></div>
-  </div>
-  <div class="settings-group">
-    <button class="sett-btn primary"    onclick="saveSettings()">💾 Speichern &amp; Verbinden</button>
-    <button class="sett-btn secondary"  onclick="testConnection()">🔌 Verbindung testen</button>
-    <button class="sett-btn secondary"  onclick="syncFromSupabase()">↻ Neu laden</button>
-    <button class="sett-btn secondary"  onclick="printQRCodes()">🖨️ Pflücker QR-Codes drucken</button>
-    <button class="sett-btn danger"     onclick="clearSettings()">🗑️ Konfiguration löschen</button>
+  <!-- Tägliche Aktionen -->
+  <div class="settings-group" style="padding-top:14px">
+    <button class="sett-btn secondary" onclick="syncFromSupabase()">↻ Stammdaten neu laden</button>
+    <button class="sett-btn secondary" onclick="testConnection()">🔌 Verbindung testen</button>
   </div>
 
-  <div class="section">
-    <div class="section-title" style="padding-top:0">Einrichtung (einmalig)</div>
+  <!-- Erweiterte Einstellungen (eingeklappt) -->
+  <div style="padding:0 16px">
+    <div onclick="toggleAdvanced()" style="cursor:pointer;font-size:12px;color:var(--text-dim);font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:10px 0;display:flex;align-items:center;gap:6px;user-select:none">
+      <span id="advArrow">▶</span> Erweiterte Einstellungen
+    </div>
   </div>
-  <div class="help-text">
-    <p>1. <strong>supabase.com</strong> → Projekt öffnen</p>
-    <p>2. SQL Editor → Script ausführen (siehe Projekt-Kontext)</p>
-    <p>3. Settings → API → <code>Project URL</code> kopieren</p>
-    <p>4. Settings → API → <code>Publishable</code> Key kopieren</p>
-    <p>5. Beides hier eintragen &amp; speichern</p>
-    <br>
-    <p><strong>Nutzer anlegen (einmalig):</strong></p>
-    <p>Authentication → Configuration → Email → "Confirm email" <strong>deaktivieren</strong></p>
-    <p>Authentication → Users → "Add user"</p>
-    <p>E-Mail: <code>name@kastanienhof.local</code> (oder eigene Domain oben einstellen)</p>
-    <p><strong>Wichtig:</strong> Beim Anlegen "Auto Confirm User" <strong>aktivieren</strong>, sonst schlägt der Login fehl</p>
-    <p>Der Benutzername im Login = Teil vor dem @</p>
+  <div id="advancedSection" style="display:none">
+    <div class="settings-group">
+      <label class="settings-label">Project URL</label>
+      <input class="settings-input" id="inputUrl" type="url" placeholder="https://xyz.supabase.co" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="settings-group">
+      <label class="settings-label">Publishable Key</label>
+      <input class="settings-input" id="inputKey" type="password" placeholder="eyJhbGciOiJIUzI1NiIs…" autocomplete="off">
+    </div>
+    <div class="settings-group">
+      <label class="settings-label">E-Mail-Domain</label>
+      <input class="settings-input" id="inputDomain" type="text" placeholder="@kastanienhof.local" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px">Login: <span style="color:var(--accent)" id="domainPreview">anna@kastanienhof.local</span></div>
+    </div>
+    <div class="settings-group">
+      <button class="sett-btn primary" onclick="saveSettings()">💾 Speichern &amp; Verbinden</button>
+      <button class="sett-btn danger"  onclick="clearSettings()">🗑️ Konfiguration löschen</button>
+    </div>
   </div>
+
 </div>
 
 <!-- Export bar -->
@@ -846,7 +838,7 @@ function renderProtokoll(){
     <div class="proto-item">
       <div style="flex:1;min-width:0">
         <div class="proto-name">${e.pflücker}</div>
-        <div class="proto-meta">${e.feld} · ${e.sorte} · ${e.uhrzeit} Uhr</div>
+        <div class="proto-meta">${e.feld}${e.sorte ? ' · ' + e.sorte : ''}${e.etiketten_nr ? ' · <span style="color:var(--accent)">#' + String(e.etiketten_nr).padStart(5,'0') + '</span>' : ''} · ${e.uhrzeit} Uhr</div>
       </div>
       <div class="proto-actions">
         <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
@@ -1335,6 +1327,7 @@ async function handleScan(raw) {
     if (rows[0].gescannt_am) {
       const d = new Date(rows[0].gescannt_am).toLocaleString('de-DE',
         { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      playErrorBeep();
       showToast(`❌ Doppelerfassung! Bereits gescannt: ${d}`, 'var(--rot-dunkel)');
       scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
     }
@@ -1523,6 +1516,16 @@ function updateSettingsStatus(status, text, sub) {
   subEl.textContent = sub !== undefined ? sub : '';
 }
 
+// ── ADVANCED SETTINGS TOGGLE ──────────────────────────────────
+function toggleAdvanced() {
+  const sec = document.getElementById('advancedSection');
+  const arrow = document.getElementById('advArrow');
+  if (!sec) return;
+  const open = sec.style.display !== 'none';
+  sec.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.textContent = open ? '▶' : '▼';
+}
+
 // ── SCAN-FIRST WORKFLOW FUNCTIONS ─────────────────────────────
 
 function playBeep() {
@@ -1535,6 +1538,21 @@ function playBeep() {
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
     osc.start(); osc.stop(ctx.currentTime + 0.25);
+  } catch {}
+}
+function playErrorBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Zwei absteigende Töne: 440 Hz → 220 Hz
+    [{ f:440, t:0 }, { f:280, t:0.2 }].forEach(({ f, t }) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = f; osc.type = 'square';
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.18);
+      osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + 0.18);
+    });
   } catch {}
 }
 
@@ -1730,7 +1748,7 @@ function renderRecentScans() {
     <div class="proto-item">
       <div style="flex:1;min-width:0">
         <div class="proto-name">${e.pflücker}</div>
-        <div class="proto-meta">${e.korbtyp || ''} · ${e.feld} · ${e.uhrzeit} Uhr</div>
+        <div class="proto-meta">${e.korbtyp || ''} · ${e.feld}${e.etiketten_nr ? ' · <span style="color:var(--accent)">#' + String(e.etiketten_nr).padStart(5,'0') + '</span>' : ''} · ${e.uhrzeit} Uhr</div>
       </div>
       <div class="proto-actions">
         <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
