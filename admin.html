@@ -488,8 +488,6 @@ tbody tr:hover { background:#fafafa; }
         <datalist id="pe_korb_dl"></datalist></div>
       <div><label class="form-label">Gewicht (kg) *</label>
         <input class="form-input" id="pe_gewicht" type="number" step="0.1" min="0.1" max="999"></div>
-      <div><label class="form-label">QR-Laufnummer</label>
-        <input class="form-input" id="pe_etiketten_nr" type="number" min="1"></div>
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeProtoEdit()">Abbrechen</button>
@@ -1387,7 +1385,6 @@ function openProtoEdit(id) {
       document.getElementById('pe_sorte').value        = r.sorte || '';
       document.getElementById('pe_korbtyp').value      = r.korbtyp || '';
       document.getElementById('pe_gewicht').value      = r.gewicht_kg != null ? r.gewicht_kg : '';
-      document.getElementById('pe_etiketten_nr').value = r.etiketten_nr != null ? r.etiketten_nr : '';
       // Datalists befüllen
       document.getElementById('pe_pfluecker_dl').innerHTML = cache.mitarbeiter.map(m=>`<option value="${esc(m.name)}">`).join('');
       document.getElementById('pe_feld_dl').innerHTML      = cache.felder.map(f=>`<option value="${esc(f.name)}">`).join('');
@@ -1412,17 +1409,15 @@ async function saveProtoEdit() {
   if (isNaN(gewicht) || gewicht <= 0) { alert('Bitte gültiges Gewicht eingeben.'); return; }
   const uhrzeit = document.getElementById('pe_uhrzeit').value || null;
   const stunde  = uhrzeit ? parseInt(uhrzeit.split(':')[0]) : null;
-  const etikettenNr = document.getElementById('pe_etiketten_nr').value;
   const data = {
     datum,
     uhrzeit,
     stunde,
-    pfluecker:   document.getElementById('pe_pfluecker').value.trim() || null,
-    feld:        document.getElementById('pe_feld').value.trim()       || null,
-    sorte:       document.getElementById('pe_sorte').value.trim()      || null,
-    korbtyp:     document.getElementById('pe_korbtyp').value.trim()    || null,
-    gewicht_kg:  gewicht,
-    etiketten_nr: etikettenNr ? parseInt(etikettenNr) : null,
+    pfluecker:  document.getElementById('pe_pfluecker').value.trim() || null,
+    feld:       document.getElementById('pe_feld').value.trim()       || null,
+    sorte:      document.getElementById('pe_sorte').value.trim()      || null,
+    korbtyp:    document.getElementById('pe_korbtyp').value.trim()    || null,
+    gewicht_kg: gewicht,
   };
   try {
     await sbPatch('ernteeintraege', protoEditId, data);

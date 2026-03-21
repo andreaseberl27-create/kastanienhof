@@ -515,10 +515,6 @@
 
 <!-- ══ ERFASSUNG ══ -->
 <div class="page active" id="page-erfassung">
-  <div class="page-header">
-    <div class="date-badge" id="dateBadge">--.--.----</div>
-    <div class="sync-pill hidden" id="syncPill" onclick="showPage('einstellungen')"></div>
-  </div>
 
   <!-- Context strip: tap to configure shift -->
   <div class="ctx-strip" id="ctxStrip" onclick="openSetup()">
@@ -694,13 +690,6 @@
 
 </div>
 
-<!-- Export bar -->
-<div class="export-bar" id="exportBar">
-  <button class="exp-btn csv" onclick="exportCSV()">📥 CSV</button>
-  <button class="exp-btn json" onclick="exportJSON()">📥 JSON</button>
-  <button class="exp-btn" onclick="exportClipboard()">📋 Kopieren</button>
-  <button class="exp-btn clear" onclick="clearToday()">🗑️ Löschen</button>
-</div>
 
 <!-- QR Scanner Modal -->
 <div class="scan-overlay hidden" id="scanOverlay">
@@ -794,7 +783,6 @@ function showPage(name) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
-  document.getElementById('exportBar').style.display = (name==='statistik'||name==='einstellungen') ? 'none' : 'flex';
   if(name==='statistik') renderStatistik();
   if(name==='protokoll') renderProtokoll();
   if(name==='erfassung') renderRecentScans();
@@ -1068,14 +1056,16 @@ function sbHeaders() {
 function rowToEntry(r) {
   return { id: r.id, datum: r.datum, uhrzeit: r.uhrzeit, stunde: r.stunde,
            feld: r.feld, sorte: r.sorte, pflücker: r.pfluecker, reihe: r.reihe,
-           qualität: r.qualitaet, korbtyp: r.korbtyp, gewicht_kg: r.gewicht_kg };
+           qualität: r.qualitaet, korbtyp: r.korbtyp, gewicht_kg: r.gewicht_kg,
+           etiketten_nr: r.etiketten_nr ?? null };
 }
 
 // App-Objekt → DB-Zeile
 function entryToRow(e) {
   return { id: e.id, datum: e.datum, uhrzeit: e.uhrzeit, stunde: e.stunde,
            feld: e.feld, sorte: e.sorte, pfluecker: e.pflücker, reihe: e.reihe,
-           qualitaet: e.qualität, korbtyp: e.korbtyp, gewicht_kg: e.gewicht_kg };
+           qualitaet: e.qualität, korbtyp: e.korbtyp, gewicht_kg: e.gewicht_kg,
+           etiketten_nr: e.etiketten_nr ?? null };
 }
 
 function setSyncUI(status, label) {
@@ -1327,9 +1317,10 @@ async function handleScan(raw) {
     if (rows[0].gescannt_am) {
       const d = new Date(rows[0].gescannt_am).toLocaleString('de-DE',
         { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      closeScan();
       playErrorBeep();
       showToast(`❌ Doppelerfassung! Bereits gescannt: ${d}`, 'var(--rot-dunkel)');
-      scanLocked = false; scanAF = requestAnimationFrame(scanFrame); return;
+      return;
     }
 
     // Sofort als gescannt markieren (verhindert Doppelscan)
