@@ -109,6 +109,8 @@ tbody tr:hover { background:#fafafa; }
 }
 .badge-green { background:#dcfce7; color:var(--green); }
 .badge-red { background:#fee2e2; color:var(--red); }
+.badge-blue { background:#dbeafe; color:#1d4ed8; }
+.badge-orange { background:#ffedd5; color:#c2410c; }
 .badge-nr {
   font-family:'SF Mono',monospace; background:#f1f5f9; color:var(--dim);
   padding:2px 8px; border-radius:6px; font-size:13px; font-weight:700;
@@ -185,6 +187,40 @@ tbody tr:hover { background:#fafafa; }
 .label-ma { font-size:11pt; font-weight:bold; color:#333; }
 .label-lfd { font-size:9pt; color:#666; margin-top:1mm; }
 .label-app { font-size:7pt; color:#aaa; margin-top:2mm; }
+
+/* ── Tooltips ── */
+[data-tip] { position:relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  background:#1e293b; color:#fff; font-size:12px; line-height:1.4;
+  padding:6px 10px; border-radius:7px; white-space:nowrap;
+  pointer-events:none; opacity:0; transition:opacity .15s;
+  z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+[data-tip]::before {
+  content:''; position:absolute; bottom:calc(100% + 1px); left:50%; transform:translateX(-50%);
+  border:5px solid transparent; border-top-color:#1e293b;
+  pointer-events:none; opacity:0; transition:opacity .15s; z-index:9999;
+}
+[data-tip]:hover::after, [data-tip]:hover::before { opacity:1; }
+/* Sidebar-Tooltips rechts statt oben */
+.nav-item[data-tip]::after {
+  bottom:auto; top:50%; left:calc(100% + 10px); transform:translateY(-50%);
+}
+.nav-item[data-tip]::before {
+  bottom:auto; top:50%; left:calc(100% + 0px);
+  transform:translateY(-50%) rotate(-90deg);
+  border-top-color:#1e293b;
+}
+/* Tooltips die nach unten gehen (z.B. bei Elementen ganz oben) */
+[data-tip-down]::after {
+  bottom:auto; top:calc(100% + 6px);
+}
+[data-tip-down]::before {
+  bottom:auto; top:calc(100% + 1px);
+  border-top-color:transparent; border-bottom-color:#1e293b;
+}
 </style>
 </head>
 <body>
@@ -217,36 +253,50 @@ tbody tr:hover { background:#fafafa; }
     <aside>
       <div class="sidebar-logo"><span>🍓</span>ErntcTracker</div>
       <nav class="sidebar-nav">
-        <div class="nav-item active" id="nav-mitarbeiter" onclick="navigate('mitarbeiter')">
+        <div class="nav-item active" id="nav-mitarbeiter" onclick="navigate('mitarbeiter')"
+          data-tip="Pflücker verwalten · QR-Etiketten drucken">
           <span class="icon">👥</span> Mitarbeiter
         </div>
-        <div class="nav-item" id="nav-felder" onclick="navigate('felder')">
+        <div class="nav-item" id="nav-betriebsleiter" onclick="navigate('betriebsleiter')"
+          data-tip="Zugänge für weitere Betriebsleiter anlegen">
+          <span class="icon">🔑</span> Betriebsleiter
+        </div>
+        <div class="nav-item" id="nav-felder" onclick="navigate('felder')"
+          data-tip="Ernte­felder und deren Fruchtart pflegen">
           <span class="icon">🗺️</span> Felder
         </div>
-        <div class="nav-item" id="nav-fruchtarten" onclick="navigate('fruchtarten')">
+        <div class="nav-item" id="nav-fruchtarten" onclick="navigate('fruchtarten')"
+          data-tip="Obst­arten (z.B. Erdbeere, Himbeere)">
           <span class="icon">🌱</span> Fruchtarten
         </div>
-        <div class="nav-item" id="nav-sorten" onclick="navigate('sorten')">
+        <div class="nav-item" id="nav-sorten" onclick="navigate('sorten')"
+          data-tip="Sorten je Fruchtart (z.B. Elsanta, Senga)">
           <span class="icon">🍓</span> Sorten
         </div>
-        <div class="nav-item" id="nav-qualitaeten" onclick="navigate('qualitaeten')">
+        <div class="nav-item" id="nav-qualitaeten" onclick="navigate('qualitaeten')"
+          data-tip="Qualitäts­stufen für die Ernte­erfassung">
           <span class="icon">⭐</span> Qualitäten
         </div>
-        <div class="nav-item" id="nav-gebinde" onclick="navigate('gebinde')">
+        <div class="nav-item" id="nav-gebinde" onclick="navigate('gebinde')"
+          data-tip="Körbe / Behälter mit Gewicht oder Manuell-Eingabe">
           <span class="icon">📦</span> Gebinde
         </div>
       </nav>
       <div class="sidebar-user">
         <div style="font-size:11px;color:var(--sidebar-dim);margin-bottom:2px" id="sidebarBetrieb"></div>
         <div class="sidebar-username" id="sidebarUser">–</div>
-        <button class="btn-logout" onclick="logout()">Abmelden</button>
+        <div id="sidebarRole" style="font-size:11px;color:var(--sidebar-dim);margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-logout" onclick="openChangePassword()" style="flex:1" data-tip="Eigenes Passwort ändern">🔒 Passwort</button>
+          <button class="btn-logout" onclick="logout()">Abmelden</button>
+        </div>
       </div>
     </aside>
 
     <main>
       <div class="page-header">
         <div class="page-title" id="pageTitle">Mitarbeiter</div>
-        <button class="btn-add" id="addBtn" onclick="openAdd()">+ Neu anlegen</button>
+        <button class="btn-add" id="addBtn" onclick="openAdd()" data-tip="Neuen Eintrag anlegen">+ Neu anlegen</button>
       </div>
       <div class="table-card">
         <div id="tableContainer"></div>
@@ -274,21 +324,42 @@ tbody tr:hover { background:#fafafa; }
     <div id="qrEmployeeName" style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--primary)"></div>
     <div class="qr-settings">
       <div>
-        <label>Anzahl Etiketten</label>
+        <label data-tip="Wie viele Aufkleber sollen gedruckt werden? (max. 200)">Anzahl Etiketten ℹ️</label>
         <input class="form-input" id="qrCount" type="number" value="10" min="1" max="200"
           oninput="updateQRPreview()">
       </div>
       <div>
-        <label>Startnummer</label>
-        <input class="form-input" id="qrStart" type="number" value="1" min="1"
-          oninput="updateQRPreview()">
+        <label data-tip="Wird automatisch als nächste freie Nummer ermittelt – nicht änderbar">Startnummer 🔒</label>
+        <input class="form-input" id="qrStart" type="number" value="1" min="1" readonly
+          style="background:#f8fafc;color:var(--dim);cursor:default">
       </div>
     </div>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:8px">Vorschau (erste 3):</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px"
+      data-tip="Jedes Etikett enthält einen QR-Code der Form MA-Nr/lfd.Nr – beim Scannen in der App wird Doppelerfassung erkannt">
+      Vorschau (erste 3) ℹ️:</div>
     <div class="qr-preview" id="qrPreview"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeQR()">Abbrechen</button>
       <button class="btn-save" onclick="printLabels()">🖨️ Drucken</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Passwort ändern Modal ── -->
+<div class="overlay hidden" id="pwOverlay" onclick="if(event.target===this)closePW()">
+  <div class="modal-card">
+    <div class="modal-title">🔒 Passwort ändern</div>
+    <div class="modal-grid">
+      <div class="full"><label class="form-label">Neues Passwort *</label>
+        <input class="form-input" id="pw_new" type="password" placeholder="Mindestens 6 Zeichen"
+          autocomplete="new-password" onkeydown="if(event.key==='Enter')saveChangePassword()"></div>
+      <div class="full"><label class="form-label">Passwort bestätigen *</label>
+        <input class="form-input" id="pw_confirm" type="password" placeholder="Wiederholen"
+          autocomplete="new-password" onkeydown="if(event.key==='Enter')saveChangePassword()"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePW()">Abbrechen</button>
+      <button class="btn-save" onclick="saveChangePassword()">Speichern</button>
     </div>
   </div>
 </div>
@@ -309,12 +380,15 @@ let session = null;
 let currentSection = 'mitarbeiter';
 let editId = null;
 let qrEmployee = null;
+let currentUserRole = null;
+let currentUserId = null;
 
-const cache = { mitarbeiter:[], felder:[], fruchtarten:[], sorten:[], qualitaeten:[], gebinde:[] };
+const cache = { mitarbeiter:[], betriebsleiter:[], felder:[], fruchtarten:[], sorten:[], qualitaeten:[], gebinde:[] };
 
 const SECTION_CONFIG = {
-  mitarbeiter:  { table:'pfluecker',    label:'Mitarbeiter',  order:'mitarbeiter_nr' },
-  felder:       { table:'felder',       label:'Felder',       order:'name' },
+  mitarbeiter:     { table:'pfluecker',          label:'Mitarbeiter',   order:'mitarbeiter_nr' },
+  betriebsleiter:  { table:'betrieb_mitglieder', label:'Betriebsleiter', order:'username', special:true },
+  felder:          { table:'felder',             label:'Felder',        order:'name' },
   fruchtarten:  { table:'fruchtarten',  label:'Fruchtarten',  order:'sort_order' },
   sorten:       { table:'sorten',       label:'Sorten',       order:'name' },
   qualitaeten:  { table:'qualitaeten',  label:'Qualitäten',   order:'sort_order' },
@@ -386,6 +460,8 @@ async function logout() {
   if (!confirm('Abmelden?')) return;
   try { await fetch(`${SB_URL}/auth/v1/logout`, { method:'POST', headers:sbHeaders() }); } catch {}
   session = null;
+  currentUserRole = null;
+  currentUserId = null;
   localStorage.removeItem('admin_session');
   document.getElementById('appPage').style.display  = 'none';
   document.getElementById('loginPage').style.display = 'flex';
@@ -409,6 +485,13 @@ async function showApp(username) {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display   = 'block';
   document.getElementById('sidebarUser').textContent = username;
+  // Rolle des aktuellen Nutzers laden
+  try {
+    const me = await sbGet('betrieb_mitglieder', `username=eq.${encodeURIComponent(username)}&select=rolle,user_id`);
+    if (me.length) { currentUserRole = me[0].rolle; currentUserId = me[0].user_id; }
+  } catch {}
+  const roleEl = document.getElementById('sidebarRole');
+  if (roleEl) roleEl.textContent = currentUserRole === 'admin' ? '★ Admin' : '● Betriebsleiter';
   // Betriebsname laden und anzeigen
   try {
     const rows = await sbGet('betriebe', 'select=name&limit=1');
@@ -428,10 +511,18 @@ async function navigate(section) {
     cfg.label + `<small id="rowCount"></small>`;
   document.getElementById('tableContainer').innerHTML =
     '<table><thead><tr><th colspan="10" style="text-align:center;padding:24px;color:var(--dim)">Lade…</th></tr></thead></table>';
+  // Nur Admin darf neue Betriebsleiter anlegen
+  const addBtn = document.getElementById('addBtn');
+  addBtn.style.display = (section === 'betriebsleiter' && currentUserRole !== 'admin') ? 'none' : '';
   await loadSection(section);
 }
 
 async function loadSection(section) {
+  if (section === 'betriebsleiter') {
+    cache.betriebsleiter = await sbGet('betrieb_mitglieder', 'order=username&select=betrieb_id,user_id,rolle,username');
+    renderSection(section);
+    return;
+  }
   // Fruchtarten immer vorladen (für Dropdowns)
   if (!cache.fruchtarten.length || section === 'fruchtarten') {
     cache.fruchtarten = await sbGet('fruchtarten', 'order=sort_order');
@@ -450,6 +541,7 @@ function renderSection(section) {
 
   const renders = {
     mitarbeiter: renderMitarbeiter,
+    betriebsleiter: renderBetriebsleiter,
     felder: renderFelder,
     fruchtarten: renderFruchtarten,
     sorten: renderSorten,
@@ -464,15 +556,15 @@ function emptyRow(msg='Noch keine Einträge') {
 }
 function statusBadge(aktiv) {
   return aktiv
-    ? '<span class="badge badge-green">● aktiv</span>'
-    : '<span class="badge badge-red">○ inaktiv</span>';
+    ? '<span class="badge badge-green" data-tip="Wird in der App angezeigt">● aktiv</span>'
+    : '<span class="badge badge-red" data-tip="Wird in der App ausgeblendet">○ inaktiv</span>';
 }
 function fruchtartName(id) {
   const f = cache.fruchtarten.find(x => x.id === id);
   return f ? `${f.emoji} ${f.name}` : '–';
 }
 function nrBadge(nr) {
-  return `<span class="badge-nr">MA-${String(nr).padStart(3,'0')}</span>`;
+  return `<span class="badge-nr" data-tip="Eindeutige Mitarbeiter-Nr. · automatisch vergeben">MA-${String(nr).padStart(5,'0')}</span>`;
 }
 
 function renderMitarbeiter(data) {
@@ -488,11 +580,35 @@ function renderMitarbeiter(data) {
         <td>${r.eintrittsdatum ? new Date(r.eintrittsdatum).toLocaleDateString('de-DE') : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
-          <button class="btn-icon qr" onclick="openQR(${r.id})" title="Etiketten drucken">🏷️</button>
-          <button class="btn-icon"    onclick="openEdit(${r.id})" title="Bearbeiten">✏️</button>
-          <button class="btn-icon del" onclick="del(${r.id})" title="Löschen">🗑</button>
+          <button class="btn-icon qr" onclick="openQR(${r.id})" data-tip="QR-Etiketten drucken">🏷️</button>
+          <button class="btn-icon"    onclick="openEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" data-tip="Mitarbeiter löschen">🗑</button>
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
+  </table>`;
+}
+
+function renderBetriebsleiter(data) {
+  const isAdmin = currentUserRole === 'admin';
+  const rows = data.length ? data.map(r => {
+    const isAdminRow = r.rolle === 'admin';
+    const roleBadge = isAdminRow
+      ? '<span class="badge badge-blue">★ Admin</span>'
+      : '<span class="badge badge-green">● Betriebsleiter</span>';
+    const delBtn = (isAdmin && !isAdminRow)
+      ? `<button class="btn-icon del" onclick="delBetriebsleiter('${r.user_id}')" data-tip="Betriebsleiter-Zugang entfernen">🗑</button>`
+      : '';
+    return `<tr>
+        <td style="font-weight:600">${esc(r.username || '–')}</td>
+        <td>${roleBadge}</td>
+        <td><div class="actions">${delBtn}</div></td>
+      </tr>`;
+  }).join('') : emptyRow('Noch keine weiteren Betriebsleiter');
+  return `<table>
+    <thead><tr>
+      <th>Benutzername</th><th>Rolle</th><th>Aktionen</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
   </table>`;
 }
 
@@ -507,8 +623,8 @@ function renderFelder(data) {
         <td>${fruchtartName(r.fruchtart_id)}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
-          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
-          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+          <button class="btn-icon"     onclick="openEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" data-tip="Feld löschen">🗑</button>
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
   </table>`;
@@ -527,8 +643,8 @@ function renderFruchtarten(data) {
         <td>${r.sort_order}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
-          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
-          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+          <button class="btn-icon"     onclick="openEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" data-tip="Fruchtart löschen">🗑</button>
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
   </table>`;
@@ -545,8 +661,8 @@ function renderSorten(data) {
         <td>${fruchtartName(r.fruchtart_id)}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
-          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
-          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+          <button class="btn-icon"     onclick="openEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" data-tip="Sorte löschen">🗑</button>
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
   </table>`;
@@ -559,14 +675,14 @@ function renderQualitaeten(data) {
     </tr></thead>
     <tbody>${data.length ? data.map(r => `
       <tr>
-        <td><span class="badge-nr">${esc(r.code)}</span></td>
+        <td><span class="badge-nr" data-tip="Kurzcode für die App-Auswahl">${esc(r.code)}</span></td>
         <td style="font-weight:600">${esc(r.label)}</td>
         <td style="font-size:18px">${r.emoji}</td>
         <td>${r.sort_order}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
-          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
-          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+          <button class="btn-icon"     onclick="openEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" data-tip="Qualität löschen">🗑</button>
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
   </table>`;
@@ -580,12 +696,12 @@ function renderGebinde(data) {
     <tbody>${data.length ? data.map(r => `
       <tr>
         <td style="font-weight:600">${esc(r.label)}</td>
-        <td>${r.gewicht_kg != null ? r.gewicht_kg + ' kg' : '<span style="color:var(--dim)">Manuell</span>'}</td>
+        <td>${r.gewicht_kg != null ? r.gewicht_kg + ' kg' : '<span style="color:var(--dim)" data-tip="Gewicht wird manuell am Gerät eingegeben">Manuell</span>'}</td>
         <td>${r.sort_order}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
-          <button class="btn-icon"     onclick="openEdit(${r.id})">✏️</button>
-          <button class="btn-icon del" onclick="del(${r.id})">🗑</button>
+          <button class="btn-icon"     onclick="openEdit(${r.id})" data-tip="Bearbeiten">✏️</button>
+          <button class="btn-icon del" onclick="del(${r.id})" data-tip="Gebinde löschen">🗑</button>
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
   </table>`;
@@ -610,10 +726,25 @@ function getFormHTML(section, r) {
   </label></div>`;
 
   switch(section) {
+    case 'betriebsleiter': return `<div class="modal-grid">
+      <div class="full"><label class="form-label">Benutzername *</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="form-input" id="f_username" placeholder="z.B. maria" style="flex:1"
+            autocomplete="off" autocorrect="off" autocapitalize="off">
+          <span style="font-size:13px;color:var(--dim);white-space:nowrap">${SB_DOMAIN}</span>
+        </div></div>
+      <div class="full"><label class="form-label">Passwort *</label>
+        <input class="form-input" id="f_password" type="password" placeholder="Mindestens 6 Zeichen"
+          autocomplete="new-password"></div>
+      <div class="full"><div class="modal-nr-hint" style="padding:8px;background:#f0fdf4;border-radius:6px;color:var(--green)">
+        ✓ Der neue Betriebsleiter kann alle Daten verwalten, aber keine weiteren Konten anlegen oder löschen.
+      </div></div>
+    </div>`;
+
     case 'mitarbeiter': return `<div class="modal-grid">
       ${r?.mitarbeiter_nr != null ? `<div class="full">
         <label class="form-label">Mitarbeiter-Nr.</label>
-        <div class="badge-nr" style="display:inline-block">MA-${String(r.mitarbeiter_nr).padStart(3,'0')}</div>
+        <div class="badge-nr" style="display:inline-block">MA-${String(r.mitarbeiter_nr).padStart(5,'0')}</div>
         <div class="modal-nr-hint">Wird automatisch vergeben und kann nicht geändert werden.</div>
       </div>` : `<div class="full"><div class="modal-nr-hint" style="padding:8px;background:#f0fdf4;border-radius:6px;color:var(--green)">
         ✓ Mitarbeiter-Nr. wird automatisch vergeben.
@@ -683,7 +814,9 @@ function getFormHTML(section, r) {
 
 function openAdd() {
   editId = null;
-  document.getElementById('modalTitle').textContent = SECTION_CONFIG[currentSection].label + ' anlegen';
+  const label = currentSection === 'betriebsleiter' ? 'Neuen Betriebsleiter anlegen' :
+    SECTION_CONFIG[currentSection].label + ' anlegen';
+  document.getElementById('modalTitle').textContent = label;
   document.getElementById('modalForm').innerHTML = getFormHTML(currentSection, null);
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.querySelector('#modalForm input:not([type=checkbox]):not([type=color])')?.focus();
@@ -755,6 +888,9 @@ function buildRecord(section) {
 }
 
 async function saveModal() {
+  if (currentSection === 'betriebsleiter') {
+    await saveBetriebsleiter(); return;
+  }
   const data = buildRecord(currentSection);
   if (!data.name && !data.label && !data.code) {
     alert('Pflichtfelder ausfüllen.'); return;
@@ -768,6 +904,50 @@ async function saveModal() {
     }
     closeModal();
     await loadSection(currentSection);
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+async function saveBetriebsleiter() {
+  const username = (getFieldVal('f_username') || '').toLowerCase();
+  const password = getFieldVal('f_password');
+  if (!username || !password) { alert('Benutzername und Passwort ausfüllen.'); return; }
+  if (password.length < 6) { alert('Passwort mindestens 6 Zeichen.'); return; }
+  try {
+    // 1. Auth-User anlegen
+    const res = await fetch(`${SB_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: username + authDomain(), password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Anlegen fehlgeschlagen');
+    const userId = data.user?.id || data.id;
+    if (!userId) throw new Error('Keine User-ID erhalten');
+    // 2. Betrieb-ID holen und User zuordnen
+    const betriebe = await sbGet('betriebe', 'select=id&limit=1');
+    if (!betriebe.length) throw new Error('Kein Betrieb gefunden');
+    await fetch(`${SB_URL}/rest/v1/betrieb_mitglieder`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ betrieb_id: betriebe[0].id, user_id: userId, username, rolle: 'betriebsleiter' })
+    });
+    closeModal();
+    await loadSection('betriebsleiter');
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+async function delBetriebsleiter(userId) {
+  if (!confirm('Betriebsleiter wirklich entfernen?')) return;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/betrieb_mitglieder?user_id=eq.${userId}`, {
+      method: 'DELETE', headers: sbHeaders()
+    });
+    if (!r.ok) throw new Error(await r.text());
+    await loadSection('betriebsleiter');
   } catch(e) {
     alert('Fehler: ' + e.message);
   }
@@ -789,7 +969,7 @@ async function openQR(id) {
   qrEmployee = cache.mitarbeiter.find(r => r.id === id);
   if (!qrEmployee) return;
   document.getElementById('qrEmployeeName').textContent =
-    `${qrEmployee.name} · MA-${String(qrEmployee.mitarbeiter_nr).padStart(3,'0')}`;
+    `${qrEmployee.name} · MA-${String(qrEmployee.mitarbeiter_nr).padStart(5,'0')}`;
   document.getElementById('qrCount').value = 10;
   document.getElementById('qrStart').value = '…';
   document.getElementById('qrOverlay').classList.remove('hidden');
@@ -809,8 +989,8 @@ function closeQR() {
   qrEmployee = null;
 }
 
-function qrContent(nr, lfd) { return `${nr}/${lfd}`; }
-function fmtNr(n, pad=3) { return String(n).padStart(pad, '0'); }
+function qrContent(nr, lfd) { return `${String(nr).padStart(5,'0')}/${String(lfd).padStart(5,'0')}`; }
+function fmtNr(n, pad=5) { return String(n).padStart(pad, '0'); }
 
 function buildLabelHTML(emp, lfdNr) {
   const nr  = emp.mitarbeiter_nr;
@@ -888,6 +1068,36 @@ async function printLabels() {
   }
   closeQR();
   setTimeout(() => window.print(), 400);
+}
+
+// ── PASSWORT ÄNDERN ──────────────────────────────────────────
+function openChangePassword() {
+  document.getElementById('pw_new').value = '';
+  document.getElementById('pw_confirm').value = '';
+  document.getElementById('pwOverlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('pw_new').focus(), 50);
+}
+function closePW() {
+  document.getElementById('pwOverlay').classList.add('hidden');
+}
+async function saveChangePassword() {
+  const pw1 = document.getElementById('pw_new').value;
+  const pw2 = document.getElementById('pw_confirm').value;
+  if (!pw1) { alert('Bitte neues Passwort eingeben.'); return; }
+  if (pw1.length < 6) { alert('Passwort mindestens 6 Zeichen.'); return; }
+  if (pw1 !== pw2) { alert('Passwörter stimmen nicht überein.'); return; }
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw1 })
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error_description || d.msg || 'Fehler'); }
+    closePW();
+    alert('Passwort erfolgreich geändert.');
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
 }
 
 // ── UTILS ────────────────────────────────────────────────────

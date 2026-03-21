@@ -141,7 +141,7 @@
   .chip.active-orange { background:rgba(244,169,68,.15); border-color:var(--accent); color:var(--accent); }
   .chip:active { transform:scale(.95); }
 
-  /* ── Reihe grid ── */
+  /* ── Reihe grid (kept for potential use) ── */
   .reihe-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
   .reihe-btn {
     aspect-ratio:1; background:var(--mittel); border:1.5px solid var(--border); border-radius:10px;
@@ -382,6 +382,92 @@
   .exp-btn.csv { border-color:rgba(76,175,80,.3); }
   .exp-btn.json { border-color:rgba(33,150,243,.3); }
   .exp-btn.clear { border-color:rgba(232,36,74,.3); color:var(--rot-hell); }
+
+  /* ── Context Strip ── */
+  .ctx-strip {
+    margin: 0 16px 12px; padding: 13px 14px;
+    background: linear-gradient(135deg, rgba(45,90,39,.15), rgba(232,36,74,.08));
+    border: 1px solid rgba(74,140,66,.4); border-radius: 14px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all .15s;
+  }
+  .ctx-strip:active { transform: scale(.98); }
+  .ctx-main { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ctx-sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+
+  /* ── Mini Summary ── */
+  .mini-summary {
+    display: flex; align-items: center; margin: 0 16px 12px;
+    background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .mini-card { flex: 1; text-align: center; padding: 10px 8px; }
+  .mini-sep { width: 1px; background: var(--border); align-self: stretch; }
+  .mini-val { display: block; font-family: 'JetBrains Mono', monospace; font-size: 22px; color: var(--accent); font-weight: 500; }
+  .mini-label { font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── Scan Hero ── */
+  .scan-hero { padding: 0 16px 10px; }
+  .scan-hero-btn {
+    width: 100%; padding: 32px 16px;
+    background: linear-gradient(135deg, var(--rot), var(--rot-dunkel));
+    border: none; border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    cursor: pointer; transition: all .15s; box-shadow: 0 10px 30px rgba(232,36,74,.4);
+  }
+  .scan-hero-btn:active { transform: scale(.97); box-shadow: 0 4px 12px rgba(232,36,74,.25); }
+  .scan-hero-btn.disabled { background: var(--mittel); box-shadow: none; opacity: .5; cursor: default; }
+  .hero-icon { font-size: 52px; line-height: 1; }
+  .hero-label { font-size: 20px; font-weight: 800; color: #fff; }
+  .hero-sub { font-size: 12px; color: rgba(255,255,255,.6); }
+
+  /* ── Menge Strip ── */
+  .menge-strip {
+    display: flex; align-items: center; gap: 6px; padding: 4px 16px 12px; flex-wrap: wrap;
+  }
+  .menge-label { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
+  .menge-btn {
+    background: var(--mittel); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 5px 12px; font-size: 13px; font-weight: 700; color: var(--text-dim);
+    cursor: pointer; transition: all .15s; font-family: 'JetBrains Mono', monospace;
+  }
+  .menge-btn.active { background: rgba(244,169,68,.15); border-color: var(--accent); color: var(--accent); }
+  .menge-btn:active { transform: scale(.92); }
+  .menge-custom {
+    background: var(--mittel); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 5px 9px; font-size: 13px; color: var(--text); width: 56px;
+    font-family: 'JetBrains Mono', monospace; outline: none;
+  }
+  .menge-custom:focus { border-color: var(--accent); }
+
+  /* ── Scan Success Popup ── */
+  .scan-success {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -60%);
+    background: var(--gruen); color: #fff;
+    padding: 28px 48px; border-radius: 24px; text-align: center;
+    z-index: 500; opacity: 0; pointer-events: none;
+    transition: opacity .18s, transform .18s; box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  }
+  .scan-success.show { opacity: 1; transform: translate(-50%, -50%); }
+  .suc-name { display: block; font-size: 30px; font-weight: 800; }
+  .suc-weight { display: block; font-size: 14px; color: rgba(255,255,255,.7); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── Setup Bottom Sheet ── */
+  .setup-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 400;
+    display: flex; align-items: flex-end;
+  }
+  .setup-overlay.hidden { display: none; }
+  .setup-sheet {
+    background: linear-gradient(160deg, var(--mittel), #1a0e07);
+    border: 1px solid var(--border); border-radius: 20px 20px 0 0;
+    padding: 20px 16px 40px; width: 100%; max-height: 82vh; overflow-y: auto;
+  }
+  .setup-sheet-title {
+    font-size: 16px; font-weight: 800; margin-bottom: 18px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .setup-close { background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; line-height: 1; }
+  .setup-section { margin-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -408,7 +494,7 @@
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="loginUser()">Anmelden</button>
-    <span class="login-setup" onclick="openSetup()">⚙️ Supabase einrichten</span>
+    <span class="login-setup" onclick="openLoginSetup()">⚙️ Supabase einrichten</span>
   </div>
 </div>
 
@@ -431,66 +517,57 @@
 <div class="page active" id="page-erfassung">
   <div class="page-header">
     <div class="date-badge" id="dateBadge">--.--.----</div>
-    <div class="sync-pill hidden" id="syncPill" onclick="showPage('einstellungen')" title="Supabase-Einstellungen"></div>
-    <div class="context-pill" id="contextPill">Kein Feld gewählt</div>
+    <div class="sync-pill hidden" id="syncPill" onclick="showPage('einstellungen')"></div>
   </div>
 
-  <div class="summary" style="margin-bottom:14px;">
-    <div class="card">
-      <div class="card-label">Heute gesamt</div>
-      <div class="card-value" id="totalKg">0.0<span class="card-unit">kg</span></div>
+  <!-- Context strip: tap to configure shift -->
+  <div class="ctx-strip" id="ctxStrip" onclick="openSetup()">
+    <div style="flex:1;min-width:0">
+      <div class="ctx-main" id="ctxMain">Schicht einrichten</div>
+      <div class="ctx-sub" id="ctxSub">Feld · Sorte · Qualität · Gebinde wählen ⟶</div>
     </div>
-    <div class="card">
-      <div class="card-label">Einträge</div>
-      <div class="card-value" id="totalEntries">0<span class="card-unit">Stk</span></div>
+    <div style="font-size:20px">⚙️</div>
+  </div>
+
+  <!-- Mini summary bar -->
+  <div class="mini-summary">
+    <div class="mini-card">
+      <span class="mini-val" id="totalEntries">0</span>
+      <span class="mini-label">Scans heute</span>
+    </div>
+    <div class="mini-sep"></div>
+    <div class="mini-card">
+      <span class="mini-val" id="totalKg">0,0 kg</span>
+      <span class="mini-label">Gesamt</span>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">🗺️ Feld</div>
-    <div class="chip-scroll" id="feldList"></div>
+  <!-- BIG SCAN BUTTON -->
+  <div class="scan-hero">
+    <button class="scan-hero-btn" id="scanHeroBtn" onclick="startScanOrWarn()">
+      <span class="hero-icon">📷</span>
+      <span class="hero-label">QR-Code scannen</span>
+      <span class="hero-sub" id="heroSub">Schicht einrichten ↑</span>
+    </button>
   </div>
-  <div class="section">
-    <div class="section-title">🍓 Sorte</div>
-    <div class="chip-scroll" id="sorteList"></div>
+
+  <!-- Menge (exception: partial Gebinde) -->
+  <div class="menge-strip">
+    <span class="menge-label">Menge:</span>
+    <button class="menge-btn active" onclick="selectMenge(1.0, this)">1×</button>
+    <button class="menge-btn" onclick="selectMenge(0.75, this)">¾×</button>
+    <button class="menge-btn" onclick="selectMenge(0.5, this)">½×</button>
+    <button class="menge-btn" onclick="selectMenge(0.25, this)">¼×</button>
+    <input class="menge-custom" id="mengeCustom" type="number" min="0.1" max="9" step="0.1"
+           placeholder="n×" title="Eigene Menge eingeben"
+           oninput="if(this.value) selectMengeCustom(parseFloat(this.value))">
   </div>
-  <div class="section">
-    <div class="section-title">👤 Pflücker</div>
-    <div class="pfluecker-wrap">
-      <div id="pfluckerHeuteSection" style="display:none">
-        <div class="sublabel">Heute aktiv</div>
-        <div class="chip-scroll" id="pfluckerHeute"></div>
-      </div>
-      <div class="pfluecker-search-row">
-        <input class="pfluecker-search" id="pfluckerSearch" type="text" placeholder="Name suchen…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <button class="qr-scan-btn" onclick="openScan()" title="QR-Code scannen">📷</button>
-      </div>
-      <div class="chip-wrap" id="pfluckerList" style="display:none"></div>
-    </div>
+
+  <!-- Recent entries (last 8) -->
+  <div class="section" style="padding-top:6px">
+    <div class="section-title">Letzte Erfassungen</div>
   </div>
-  <div class="section">
-    <div class="section-title">🌱 Reihe</div>
-    <div class="reihe-grid" id="reiheGrid"></div>
-  </div>
-  <div class="section">
-    <div class="section-title">✨ Qualität</div>
-    <div class="qual-grid" id="qualGrid"></div>
-  </div>
-  <div class="section">
-    <div class="section-title">🧺 Gebinde</div>
-    <div class="korb-row" id="korbRow"></div>
-  </div>
-  <div class="section">
-    <div class="section-title">⚖️ Gewicht (kg)</div>
-    <div class="weight-display" id="weightDisplay" onclick="toggleNumpad()">
-      <span class="weight-placeholder" id="weightPlaceholder">Tippen zum Eingeben</span>
-      <span id="weightVal" style="display:none"></span>
-    </div>
-  </div>
-  <div class="numpad" id="numpad"><div class="numpad-grid" id="numpadGrid"></div></div>
-  <div class="submit-wrap">
-    <button class="submit-btn" onclick="addEntry()">➕ Eintrag erfassen</button>
-  </div>
+  <div class="protokoll" id="recentList"></div>
 </div>
 
 <!-- ══ PROTOKOLL ══ -->
@@ -644,15 +721,32 @@
   <button class="scan-close-btn" onclick="closeScan()">Abbrechen</button>
 </div>
 
+<!-- Scan Success Popup -->
+<div class="scan-success" id="scanSuccess">
+  <span class="suc-name" id="sucName">Anna</span>
+  <span class="suc-weight" id="sucWeight">5,0 kg · 1×</span>
+</div>
+
+<!-- Setup Bottom Sheet -->
+<div class="setup-overlay hidden" id="setupOverlay" onclick="if(event.target===this)closeSetup()">
+  <div class="setup-sheet">
+    <div class="setup-sheet-title">
+      <span>⚙️ Schicht einrichten</span>
+      <button class="setup-close" onclick="closeSetup()">✕</button>
+    </div>
+    <div id="setupContent"></div>
+  </div>
+</div>
+
 <!-- Edit-Modal -->
 <div class="edit-overlay hidden" id="editOverlay" onclick="if(event.target===this)closeEditModal()">
   <div class="edit-modal">
     <h3>✏️ Eintrag bearbeiten</h3>
     <div id="editInfo" style="font-size:12px;color:var(--text-dim);margin-bottom:14px"></div>
-    <label>Gewicht (kg)</label>
-    <input type="number" id="editGewicht" step="0.1" min="0" max="99">
-    <label>Reihe</label>
-    <input type="number" id="editReihe" min="1" max="99">
+    <label>Menge (× Gebinde)</label>
+    <input type="number" id="editMenge" step="0.1" min="0.1" max="9">
+    <label>Gewicht gesamt (kg)</label>
+    <input type="number" id="editGewicht" step="0.1" min="0" max="999">
     <div class="edit-modal-btns">
       <button class="cancel" onclick="closeEditModal()">Abbrechen</button>
       <button class="save" onclick="saveEditEntry()">Speichern</button>
@@ -686,9 +780,19 @@ let GEBINDE = JSON.parse(localStorage.getItem('sb_gebinde') || 'null') || [
   {label:'Steige 10kg', gewicht_kg:10.0, sort_order:3},
   {label:'Manuell',     gewicht_kg:null, sort_order:4}
 ];
-const REIHEN = 18;
 
-let state = { feld:null, sorte:null, pflücker:null, reihe:null, qualität:null, korbtyp:null, gewicht:'', numpadOpen:false };
+// Schicht-Kontext (einmalig je Schicht gesetzt, persisted)
+let FELDER_DATA  = JSON.parse(localStorage.getItem('sb_felder_data')  || 'null') || [];
+let SORTEN_DATA  = JSON.parse(localStorage.getItem('sb_sorten_data')  || 'null') || [];
+let SCHICHT = {
+  feld:     localStorage.getItem('schicht_feld')    || null,
+  sorte:    localStorage.getItem('schicht_sorte')   || null,
+  qualität: localStorage.getItem('schicht_qual')    || null,
+  gebinde:  JSON.parse(localStorage.getItem('schicht_gebinde') || 'null'),
+};
+let scanMenge = 1.0;
+let state = { pflücker: null, _etikettenNr: null };
+
 const todayStr = new Date().toISOString().slice(0,10);
 let entries = JSON.parse(localStorage.getItem('ernteEntries')||'[]').filter(e=>e.datum===todayStr);
 
@@ -700,6 +804,7 @@ function showPage(name) {
   document.getElementById('exportBar').style.display = (name==='statistik'||name==='einstellungen') ? 'none' : 'flex';
   if(name==='statistik') renderStatistik();
   if(name==='protokoll') renderProtokoll();
+  if(name==='erfassung') renderRecentScans();
   if(name==='einstellungen') {
     document.getElementById('inputUrl').value    = CONFIG.url;
     document.getElementById('inputKey').value    = CONFIG.key;
@@ -715,209 +820,11 @@ async function init() {
   document.getElementById('dateBadge').textContent = ds;
   document.getElementById('statDateBadge').textContent = ds;
 
-  buildChips('feldList', FELDER, 'feld', 'active-green');
-  buildChips('sorteList', SORTEN, 'sorte', 'active-orange');
-  buildPfluckerChips();
-  buildQualButtons();
-  buildGebindeButtons();
-
-  const rGrid = document.getElementById('reiheGrid');
-  for(let i=1;i<=REIHEN;i++){
-    const el=document.createElement('div');
-    el.className='reihe-btn'; el.textContent=i;
-    el.onclick=()=>selectReihe(i);
-    rGrid.appendChild(el);
-  }
-
-  ['1','2','3','4','5','6','7','8','9','.','0','⌫'].forEach(k=>{
-    const b=document.createElement('button');
-    b.className='num-btn'+(k==='⌫'?' del':'');
-    b.textContent=k; b.onclick=()=>numpadKey(k);
-    document.getElementById('numpadGrid').appendChild(b);
-  });
-
+  updateContextStrip();
+  renderRecentScans();
   updateSummary();
-
   updateLoginHint();
   await checkAuth();
-}
-
-function buildChips(cid, items, field, cls) {
-  const el=document.getElementById(cid);
-  el.innerHTML='';
-  items.forEach(item=>{
-    const c=document.createElement('div'); c.className='chip'; c.textContent=item;
-    c.onclick=()=>{
-      state[field]=item;
-      el.querySelectorAll('.chip').forEach(x=>x.className='chip');
-      c.className='chip '+cls;
-      updateContextPill();
-    };
-    el.appendChild(c);
-  });
-}
-
-function buildPfluckerChips() {
-  const list = document.getElementById('pfluckerList');
-  list.innerHTML = '';
-  document.getElementById('pfluckerSearch').value = '';
-  list.style.display = 'none';
-  PFLÜCKER.forEach(item => {
-    const c = document.createElement('div');
-    c.className = 'chip'; c.textContent = item; c.dataset.name = item.toLowerCase();
-    c.onclick = () => selectPfluecker(item);
-    list.appendChild(c);
-  });
-  document.getElementById('pfluckerSearch').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase().trim();
-    list.style.display = q ? 'flex' : 'none';
-    list.querySelectorAll('.chip').forEach(c => {
-      c.style.display = c.dataset.name.includes(q) ? '' : 'none';
-    });
-  });
-  updatePfluckerHeute();
-}
-
-function selectPfluecker(item) {
-  state['pflücker'] = item;
-  document.getElementById('pfluckerSearch').value = '';
-  document.getElementById('pfluckerList').style.display = 'none';
-  updatePfluckerHeute();
-  updateContextPill();
-}
-
-function updatePfluckerHeute() {
-  const section   = document.getElementById('pfluckerHeuteSection');
-  const sublabel  = section.querySelector('.sublabel');
-  const heuteList = document.getElementById('pfluckerHeute');
-
-  // Nach Feld filtern wenn eines gewählt ist
-  const relevant = state.feld ? entries.filter(e => e.feld === state.feld) : entries;
-  const fromEntries = [...new Set(relevant.map(e => e.pflücker))].filter(Boolean);
-
-  // Aktuell gewählten Pflücker immer oben anzeigen, auch wenn noch kein Eintrag
-  const showList = (state.pflücker && !fromEntries.includes(state.pflücker))
-    ? [state.pflücker, ...fromEntries]
-    : fromEntries;
-
-  if (!showList.length) { section.style.display = 'none'; return; }
-
-  section.style.display = '';
-  if (sublabel) sublabel.textContent = state.feld ? 'Heute aktiv \xb7 ' + state.feld : 'Heute aktiv';
-
-  heuteList.innerHTML = '';
-  showList.forEach(item => {
-    const c = document.createElement('div');
-    c.className = 'chip' + (state.pflücker === item ? ' active-red' : '');
-    c.textContent = item;
-    c.onclick = () => selectPfluecker(item);
-    heuteList.appendChild(c);
-  });
-}
-
-function buildQualButtons() {
-  const el = document.getElementById('qualGrid');
-  el.innerHTML = '';
-  QUALITAETEN.forEach(q => {
-    const btn = document.createElement('div');
-    btn.className = 'qual-btn'; btn.dataset.q = q.code;
-    btn.innerHTML = `<span class="emoji">${q.emoji}</span>${q.label}`;
-    btn.onclick = () => selectQual(q.code);
-    el.appendChild(btn);
-  });
-}
-
-function buildGebindeButtons() {
-  const el = document.getElementById('korbRow');
-  el.innerHTML = '';
-  GEBINDE.forEach(g => {
-    const k = g.gewicht_kg != null ? String(g.gewicht_kg) : 'manuell';
-    const btn = document.createElement('div');
-    btn.className = 'korb-btn'; btn.dataset.k = k;
-    btn.textContent = g.label;
-    btn.onclick = () => selectKorb(k);
-    el.appendChild(btn);
-  });
-}
-
-async function loadMetadata() {
-  if (!CONFIG.url || !CONFIG.key) return;
-  try {
-    const headers = sbHeaders();
-    const [fR, sR, pR, qR, gR] = await Promise.all([
-      fetch(`${CONFIG.url}/rest/v1/felder?aktiv=eq.true&order=name`,             {headers}),
-      fetch(`${CONFIG.url}/rest/v1/sorten?aktiv=eq.true&order=name`,             {headers}),
-      fetch(`${CONFIG.url}/rest/v1/pfluecker?aktiv=eq.true&order=name`,          {headers}),
-      fetch(`${CONFIG.url}/rest/v1/qualitaeten?aktiv=eq.true&order=sort_order`,  {headers}),
-      fetch(`${CONFIG.url}/rest/v1/gebinde?aktiv=eq.true&order=sort_order`,      {headers}),
-    ]);
-    if (fR.ok) { FELDER      = (await fR.json()).map(r => r.name); localStorage.setItem('sb_felder',      JSON.stringify(FELDER)); }
-    if (sR.ok) { SORTEN      = (await sR.json()).map(r => r.name); localStorage.setItem('sb_sorten',      JSON.stringify(SORTEN)); }
-    if (pR.ok) {
-      const pData = await pR.json();
-      PFLÜCKER = pData.map(r => r.name);
-      PFLÜCKER_NR_MAP = Object.fromEntries(pData.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.name]));
-      localStorage.setItem('sb_pfluecker',    JSON.stringify(PFLÜCKER));
-      localStorage.setItem('sb_pfluecker_nr', JSON.stringify(PFLÜCKER_NR_MAP));
-    }
-    if (qR.ok) { QUALITAETEN = await qR.json();                    localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
-    if (gR.ok) { GEBINDE     = await gR.json();                    localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
-    // UI neu aufbauen mit frischen Daten
-    buildChips('feldList', FELDER, 'feld', 'active-green');
-    buildChips('sorteList', SORTEN, 'sorte', 'active-orange');
-    buildPfluckerChips();
-    buildQualButtons();
-    buildGebindeButtons();
-  } catch(e) {
-    console.warn('Metadaten-Load fehlgeschlagen, nutze Cache/Defaults:', e);
-  }
-}
-
-function selectReihe(r){state.reihe=r;document.querySelectorAll('.reihe-btn').forEach((el,i)=>el.classList.toggle('active',i+1===r));}
-function selectQual(q){state.qualität=q;document.querySelectorAll('.qual-btn').forEach(el=>el.classList.toggle('active',el.dataset.q===q));}
-function selectKorb(k){
-  state.korbtyp=k;
-  document.querySelectorAll('.korb-btn').forEach(el=>el.classList.toggle('active',el.dataset.k===k));
-  if(k!=='manuell'){state.gewicht=k;updateWeightDisplay();closeNumpad();}
-  else{state.gewicht='';updateWeightDisplay();openNumpad();}
-}
-function updateContextPill(){
-  const p=[state.feld,state.sorte].filter(Boolean);
-  document.getElementById('contextPill').textContent=p.length?p.join(' · '):'Kein Feld gewählt';
-  updatePfluckerHeute();
-}
-
-function toggleNumpad(){state.numpadOpen?closeNumpad():openNumpad();}
-function openNumpad(){state.numpadOpen=true;document.getElementById('numpad').classList.add('open');}
-function closeNumpad(){state.numpadOpen=false;document.getElementById('numpad').classList.remove('open');}
-function numpadKey(k){
-  if(k==='⌫')state.gewicht=state.gewicht.slice(0,-1);
-  else if(k==='.')(!state.gewicht.includes('.')&&(state.gewicht+='.'));
-  else if(state.gewicht.length<6)state.gewicht+=k;
-  updateWeightDisplay();
-}
-function updateWeightDisplay(){
-  const ph=document.getElementById('weightPlaceholder'),val=document.getElementById('weightVal'),disp=document.getElementById('weightDisplay');
-  if(state.gewicht){ph.style.display='none';val.style.display='';val.textContent=state.gewicht+' kg';disp.classList.add('has-value');}
-  else{ph.style.display='';val.style.display='none';disp.classList.remove('has-value');}
-}
-
-function addEntry(){
-  const{feld,sorte,pflücker,reihe,qualität,gewicht}=state;
-  if(!feld||!sorte||!pflücker||!reihe||!qualität||!gewicht||parseFloat(gewicht)<=0){showToast('⚠️ Bitte alle Felder ausfüllen!','var(--braun)');return;}
-  entries.unshift({
-    id:Date.now(), datum:todayStr,
-    uhrzeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}),
-    stunde:new Date().getHours(),
-    feld,sorte,pflücker,reihe,qualität,korbtyp:state.korbtyp,gewicht_kg:parseFloat(gewicht),
-    etiketten_nr: state._etikettenNr || null
-  });
-  saveEntries(); updateSummary(); updatePfluckerHeute();
-  pushEntry(entries[0]);
-  showToast(`✅ ${parseFloat(gewicht).toFixed(1)} kg · ${feld} · ${sorte}`);
-  state={...state,qualität:null,korbtyp:null,gewicht:'',numpadOpen:false,_etikettenNr:null};
-  document.querySelectorAll('.qual-btn,.korb-btn').forEach(el=>el.classList.remove('active'));
-  updateWeightDisplay(); closeNumpad();
 }
 
 function saveEntries(){
@@ -926,9 +833,9 @@ function saveEntries(){
 }
 
 function updateSummary(){
-  const t=entries.reduce((s,e)=>s+e.gewicht_kg,0);
-  document.getElementById('totalKg').innerHTML=t.toFixed(1)+'<span class="card-unit">kg</span>';
-  document.getElementById('totalEntries').innerHTML=entries.length+'<span class="card-unit">Stk</span>';
+  const total = entries.reduce((s,e) => s + e.gewicht_kg, 0);
+  document.getElementById('totalKg').textContent = total.toFixed(1) + ' kg';
+  document.getElementById('totalEntries').textContent = entries.length;
 }
 
 function renderProtokoll(){
@@ -937,8 +844,8 @@ function renderProtokoll(){
   el.innerHTML=entries.slice(0,60).map(e=>`
     <div class="proto-item">
       <div style="flex:1;min-width:0">
-        <div class="proto-name">${e.pflücker} · Reihe ${e.reihe}</div>
-        <div class="proto-meta"><span class="qual-dot q-${e.qualität}"></span>Kl.${e.qualität} · ${e.feld} · ${e.sorte} · ${e.uhrzeit} Uhr</div>
+        <div class="proto-name">${e.pflücker}</div>
+        <div class="proto-meta">${e.feld} · ${e.sorte} · ${e.uhrzeit} Uhr</div>
       </div>
       <div class="proto-actions">
         <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
@@ -1009,8 +916,8 @@ function renderGroupTable(tableId,field){
 
 function exportCSV(){
   if(!entries.length){showToast('Keine Daten','var(--braun)');return;}
-  const h=['ID','Datum','Uhrzeit','Feld','Sorte','Pflücker','Reihe','Qualität','Korbtyp','Gewicht_kg'];
-  const rows=entries.map(e=>[e.id,e.datum,e.uhrzeit,e.feld,e.sorte,e.pflücker,e.reihe,e.qualität,e.korbtyp||'',e.gewicht_kg].join(';'));
+  const h=['ID','Datum','Uhrzeit','Feld','Sorte','Pflücker','Qualität','Korbtyp','Gewicht_kg'];
+  const rows=entries.map(e=>[e.id,e.datum,e.uhrzeit,e.feld,e.sorte,e.pflücker,e.qualität,e.korbtyp||'',e.gewicht_kg].join(';'));
   download([h.join(';'),...rows].join('\n'),`ernte_${todayStr}.csv`,'text/csv;charset=utf-8;');
   showToast('📥 CSV exportiert!');
 }
@@ -1028,14 +935,14 @@ function exportClipboard(){
   if(!entries.length){showToast('Keine Daten','var(--braun)');return;}
   const total=entries.reduce((s,e)=>s+e.gewicht_kg,0);
   let t=`🍓 ERNTE ${todayStr}\n${'─'.repeat(38)}\n`;
-  entries.forEach(e=>t+=`${e.uhrzeit} | ${e.pflücker.padEnd(7)} | ${e.feld.padEnd(7)} | ${e.sorte.substring(0,10).padEnd(10)} | R.${String(e.reihe).padStart(2)} | Kl.${e.qualität} | ${e.gewicht_kg.toFixed(1)} kg\n`);
+  entries.forEach(e=>t+=`${e.uhrzeit} | ${e.pflücker.padEnd(7)} | ${e.feld.padEnd(7)} | ${e.sorte.substring(0,10).padEnd(10)} | Kl.${e.qualität} | ${e.gewicht_kg.toFixed(1)} kg\n`);
   t+=`${'─'.repeat(38)}\nGesamt: ${total.toFixed(1)} kg | ${entries.length} Einträge`;
   navigator.clipboard.writeText(t).then(()=>showToast('📋 Kopiert!'));
 }
 function download(c,n,t){const b=new Blob([c],{type:t});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=n;a.click();URL.revokeObjectURL(u);}
 function clearToday(){
   if(!entries.length)return;
-  if(confirm(`Alle ${entries.length} Einträge von heute löschen?`)){entries=[];saveEntries();updateSummary();renderProtokoll();showToast('🗑️ Gelöscht','var(--braun)');}
+  if(confirm(`Alle ${entries.length} Einträge von heute löschen?`)){entries=[];saveEntries();updateSummary();renderProtokoll();renderRecentScans();showToast('🗑️ Gelöscht','var(--braun)');}
 }
 function showToast(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--gruen)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
@@ -1129,7 +1036,7 @@ function showApp(username) {
   }
 }
 
-function openSetup() {
+function openLoginSetup() {
   document.getElementById('loginOverlay').classList.add('hidden');
   showPage('einstellungen');
 }
@@ -1239,6 +1146,7 @@ async function syncFromSupabase() {
     const otherDays = localAll.filter(e => e.datum !== todayStr);
     localStorage.setItem('ernteEntries', JSON.stringify([...entries, ...otherDays]));
     updateSummary();
+    renderRecentScans();
     const activePage = document.querySelector('.page.active');
     if (activePage?.id === 'page-protokoll') renderProtokoll();
     if (activePage?.id === 'page-statistik') renderStatistik();
@@ -1278,6 +1186,47 @@ window.addEventListener('online', () => {
     syncFromSupabase();
   }
 });
+
+async function loadMetadata() {
+  if (!CONFIG.url || !CONFIG.key) return;
+  try {
+    const headers = sbHeaders();
+    const [fR, sR, pR, qR, gR] = await Promise.all([
+      fetch(`${CONFIG.url}/rest/v1/felder?aktiv=eq.true&order=name`,             {headers}),
+      fetch(`${CONFIG.url}/rest/v1/sorten?aktiv=eq.true&order=name`,             {headers}),
+      fetch(`${CONFIG.url}/rest/v1/pfluecker?aktiv=eq.true&order=name`,          {headers}),
+      fetch(`${CONFIG.url}/rest/v1/qualitaeten?aktiv=eq.true&order=sort_order`,  {headers}),
+      fetch(`${CONFIG.url}/rest/v1/gebinde?aktiv=eq.true&order=sort_order`,      {headers}),
+    ]);
+    if (fR.ok) {
+      FELDER_DATA = await fR.json();
+      FELDER = FELDER_DATA.map(r => r.name);
+      localStorage.setItem('sb_felder', JSON.stringify(FELDER));
+      localStorage.setItem('sb_felder_data', JSON.stringify(FELDER_DATA));
+    }
+    if (sR.ok) {
+      SORTEN_DATA = await sR.json();
+      SORTEN = SORTEN_DATA.map(r => r.name);
+      localStorage.setItem('sb_sorten', JSON.stringify(SORTEN));
+      localStorage.setItem('sb_sorten_data', JSON.stringify(SORTEN_DATA));
+    }
+    if (pR.ok) {
+      const pData = await pR.json();
+      PFLÜCKER = pData.map(r => r.name);
+      PFLÜCKER_NR_MAP = Object.fromEntries(pData.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.name]));
+      localStorage.setItem('sb_pfluecker',    JSON.stringify(PFLÜCKER));
+      localStorage.setItem('sb_pfluecker_nr', JSON.stringify(PFLÜCKER_NR_MAP));
+    }
+    if (qR.ok) { QUALITAETEN = await qR.json(); localStorage.setItem('sb_qualitaeten', JSON.stringify(QUALITAETEN)); }
+    if (gR.ok) { GEBINDE     = await gR.json(); localStorage.setItem('sb_gebinde',     JSON.stringify(GEBINDE)); }
+    // Update context strip with fresh data
+    updateContextStrip();
+    // If setup sheet is open, re-render it
+    if (!document.getElementById('setupOverlay').classList.contains('hidden')) renderSetupSheet();
+  } catch(e) {
+    console.warn('Metadaten-Load fehlgeschlagen, nutze Cache/Defaults:', e);
+  }
+}
 
 // ── QR SCANNER ────────────────────────────────────────────────
 
@@ -1348,8 +1297,11 @@ async function handleScan(raw) {
   if (!CONFIG.url || !CONFIG.key || !navigator.onLine) {
     showToast('⚠️ Offline – keine Duplikat-Prüfung', 'var(--braun)');
     state._etikettenNr = lfdNr;
-    selectPfluecker(pickerName);
-    closeScan(); return;
+    closeScan();
+    await addEntryFromScan(pickerName);
+    playBeep();
+    showScanSuccess(pickerName);
+    return;
   }
 
   try {
@@ -1381,9 +1333,10 @@ async function handleScan(raw) {
     });
 
     state._etikettenNr = lfdNr;
-    selectPfluecker(pickerName);
     closeScan();
-    showToast(`✅ ${pickerName} · Etik. #${String(lfdNr).padStart(3,'0')}`);
+    await addEntryFromScan(pickerName);
+    playBeep();
+    showScanSuccess(pickerName);
   } catch(e) {
     showToast('❌ Fehler bei Prüfung: ' + e.message, 'var(--rot-dunkel)');
     scanLocked = false; scanAF = requestAnimationFrame(scanFrame);
@@ -1445,6 +1398,7 @@ async function deleteEntry(id) {
   saveEntriesToLocal();
   updateSummary();
   renderProtokoll();
+  renderRecentScans();
   if (CONFIG.url && CONFIG.key) {
     try {
       await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}?id=eq.${id}`, {
@@ -1462,8 +1416,8 @@ function openEditModal(id) {
   if (!e) return;
   editEntryId = id;
   document.getElementById('editInfo').textContent = `${e.pflücker} · ${e.feld} · ${e.uhrzeit} Uhr`;
+  document.getElementById('editMenge').value   = '';
   document.getElementById('editGewicht').value = e.gewicht_kg;
-  document.getElementById('editReihe').value   = e.reihe;
   document.getElementById('editOverlay').classList.remove('hidden');
   document.getElementById('editGewicht').focus();
 }
@@ -1476,22 +1430,20 @@ function closeEditModal() {
 async function saveEditEntry() {
   const e = entries.find(x => x.id === editEntryId);
   if (!e) return;
-  const kg    = parseFloat(document.getElementById('editGewicht').value);
-  const reihe = parseInt(document.getElementById('editReihe').value);
+  const kg = parseFloat(document.getElementById('editGewicht').value);
   if (isNaN(kg) || kg <= 0) { showToast('⚠️ Ungültiges Gewicht', 'var(--braun)'); return; }
-  if (isNaN(reihe) || reihe < 1) { showToast('⚠️ Ungültige Reihe', 'var(--braun)'); return; }
   e.gewicht_kg = kg;
-  e.reihe      = reihe;
   saveEntriesToLocal();
   updateSummary();
   renderProtokoll();
+  renderRecentScans();
   closeEditModal();
   if (CONFIG.url && CONFIG.key) {
     try {
       await fetch(`${CONFIG.url}/rest/v1/${CONFIG.table}?id=eq.${editEntryId}`, {
         method: 'PATCH',
         headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ gewicht_kg: kg, reihe })
+        body: JSON.stringify({ gewicht_kg: kg })
       });
     } catch(e) { console.warn('PATCH fehlgeschlagen:', e); }
   }
@@ -1555,6 +1507,198 @@ function updateSettingsStatus(status, text, sub) {
   dot.className     = 'status-dot ' + status;
   txt.textContent   = text;
   subEl.textContent = sub !== undefined ? sub : '';
+}
+
+// ── SCAN-FIRST WORKFLOW FUNCTIONS ─────────────────────────────
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880; osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start(); osc.stop(ctx.currentTime + 0.25);
+  } catch {}
+}
+
+function showScanSuccess(name) {
+  const popup = document.getElementById('scanSuccess');
+  const { gebinde } = SCHICHT;
+  const kg = gebinde?.gewicht_kg != null ? (scanMenge * gebinde.gewicht_kg).toFixed(1) + ' kg · ' + scanMenge + '×' : '';
+  document.getElementById('sucName').textContent = '✅ ' + name;
+  document.getElementById('sucWeight').textContent = kg;
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 2000);
+  // reset menge to 1 after scan
+  scanMenge = 1.0;
+  document.querySelectorAll('.menge-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.getElementById('mengeCustom').value = '';
+}
+
+async function addEntryFromScan(pickerName) {
+  const { feld, sorte, qualität, gebinde } = SCHICHT;
+  if (!feld || !sorte || !qualität || !gebinde) return;
+  const gewicht_kg = gebinde.gewicht_kg != null ? parseFloat((scanMenge * gebinde.gewicht_kg).toFixed(3)) : 0;
+  const entry = {
+    id: Date.now(), datum: todayStr,
+    uhrzeit: new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}),
+    stunde: new Date().getHours(),
+    feld, sorte, pflücker: pickerName, reihe: null,
+    qualität, korbtyp: gebinde.label,
+    gewicht_kg,
+    etiketten_nr: state._etikettenNr || null
+  };
+  state._etikettenNr = null;
+  entries.unshift(entry);
+  saveEntries(); updateSummary(); renderRecentScans();
+  pushEntry(entry);
+}
+
+function startScanOrWarn() {
+  const { feld, sorte, qualität, gebinde } = SCHICHT;
+  if (!feld || !sorte || !qualität || !gebinde) {
+    openSetup();
+    return;
+  }
+  openScan();
+}
+
+function selectMenge(m, btn) {
+  scanMenge = m;
+  document.getElementById('mengeCustom').value = '';
+  document.querySelectorAll('.menge-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function selectMengeCustom(m) {
+  scanMenge = m;
+  document.querySelectorAll('.menge-btn').forEach(b => b.classList.remove('active'));
+}
+
+function saveSchicht() {
+  localStorage.setItem('schicht_feld',    SCHICHT.feld    || '');
+  localStorage.setItem('schicht_sorte',   SCHICHT.sorte   || '');
+  localStorage.setItem('schicht_qual',    SCHICHT.qualität || '');
+  localStorage.setItem('schicht_gebinde', JSON.stringify(SCHICHT.gebinde));
+}
+
+function updateContextStrip() {
+  const { feld, sorte, qualität, gebinde } = SCHICHT;
+  const isSet = feld && sorte && qualität && gebinde;
+  const mainEl = document.getElementById('ctxMain');
+  const subEl  = document.getElementById('ctxSub');
+  const heroBtn = document.getElementById('scanHeroBtn');
+  const heroSub = document.getElementById('heroSub');
+  if (isSet) {
+    mainEl.textContent = (feld || '') + '  ·  ' + (sorte || '');
+    subEl.textContent  = (qualität ? '⭐ ' + qualität : '') + '  ·  ' + (gebinde?.label || '');
+    if (heroBtn) { heroBtn.classList.remove('disabled'); }
+    if (heroSub) heroSub.textContent = (gebinde?.gewicht_kg != null ? gebinde.gewicht_kg + ' kg / Stück' : 'Manuelles Gewicht');
+  } else {
+    mainEl.textContent = 'Schicht einrichten';
+    subEl.textContent  = 'Feld · Sorte · Qualität · Gebinde wählen ⟶';
+    if (heroBtn) { heroBtn.classList.add('disabled'); }
+    if (heroSub) heroSub.textContent = 'Erst Schicht einrichten ↑';
+  }
+}
+
+function openSetup() {
+  document.getElementById('setupOverlay').classList.remove('hidden');
+  renderSetupSheet();
+}
+function closeSetup() {
+  document.getElementById('setupOverlay').classList.add('hidden');
+  updateContextStrip();
+}
+
+function renderSetupSheet() {
+  const el = document.getElementById('setupContent');
+  // Determine which sorten to show (filtered by feld's fruchtart_id)
+  let filteredSorten = SORTEN;
+  if (SCHICHT.feld && FELDER_DATA.length && SORTEN_DATA.length) {
+    const feldObj = FELDER_DATA.find(f => f.name === SCHICHT.feld);
+    if (feldObj?.fruchtart_id) {
+      filteredSorten = SORTEN_DATA.filter(s => s.fruchtart_id === feldObj.fruchtart_id).map(s => s.name);
+    }
+  }
+
+  function chips(items, selected, onclick) {
+    return items.map(item => {
+      const active = item === selected ? ' active-orange' : '';
+      return `<div class="chip${active}" onclick="${onclick}('${item.replace(/'/g,"\\'")}', this)" style="margin-bottom:4px">${item}</div>`;
+    }).join('');
+  }
+  function qualChips() {
+    return QUALITAETEN.map(q => {
+      const active = q.code === SCHICHT.qualität ? ' active-orange' : '';
+      return `<div class="chip${active}" onclick="selectSchichtQual('${q.code}', this)">${q.emoji} ${q.label}</div>`;
+    }).join('');
+  }
+  function gebindeChips() {
+    return GEBINDE.map(g => {
+      const key = g.label;
+      const active = SCHICHT.gebinde?.label === key ? ' active-orange' : '';
+      const sub = g.gewicht_kg != null ? g.gewicht_kg + ' kg' : 'Manuell';
+      return `<div class="chip${active}" onclick="selectSchichtGebinde('${key.replace(/'/g,"\\'")}', this)">${key}<br><span style="font-size:10px;opacity:.7">${sub}</span></div>`;
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <div class="setup-section">
+      <div class="section-title">🗺️ Feld</div>
+      <div class="chip-wrap" id="setupFelder">${chips(FELDER, SCHICHT.feld, 'selectSchichtFeld')}</div>
+    </div>
+    <div class="setup-section">
+      <div class="section-title">🍓 Sorte</div>
+      <div class="chip-wrap" id="setupSorten">${filteredSorten.length ? chips(filteredSorten, SCHICHT.sorte, 'selectSchichtSorte') : '<span style="color:var(--text-dim);font-size:13px">Erst Feld wählen</span>'}</div>
+    </div>
+    <div class="setup-section">
+      <div class="section-title">✨ Qualität</div>
+      <div class="chip-wrap">${qualChips()}</div>
+    </div>
+    <div class="setup-section">
+      <div class="section-title">🧺 Gebinde (Standard)</div>
+      <div class="chip-wrap">${gebindeChips()}</div>
+    </div>
+    <button onclick="closeSetup()" style="width:100%;padding:14px;background:var(--rot);border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;cursor:pointer;margin-top:6px">✅ Übernehmen</button>
+  `;
+}
+
+function selectSchichtFeld(name) {
+  SCHICHT.feld = name; SCHICHT.sorte = null; saveSchicht(); renderSetupSheet();
+}
+function selectSchichtSorte(name) {
+  SCHICHT.sorte = name; saveSchicht(); renderSetupSheet();
+}
+function selectSchichtQual(code) {
+  SCHICHT.qualität = code; saveSchicht(); renderSetupSheet();
+}
+function selectSchichtGebinde(label) {
+  SCHICHT.gebinde = GEBINDE.find(g => g.label === label) || null; saveSchicht(); renderSetupSheet();
+}
+
+function renderRecentScans() {
+  const el = document.getElementById('recentList');
+  if (!el) return;
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>Noch keine Erfassungen heute</p></div>';
+    return;
+  }
+  el.innerHTML = entries.slice(0, 8).map(e => `
+    <div class="proto-item">
+      <div style="flex:1;min-width:0">
+        <div class="proto-name">${e.pflücker}</div>
+        <div class="proto-meta">${e.korbtyp || ''} · ${e.feld} · ${e.uhrzeit} Uhr</div>
+      </div>
+      <div class="proto-actions">
+        <div class="proto-weight">${e.gewicht_kg.toFixed(1)} kg</div>
+        <button class="proto-action-btn" onclick="openEditModal(${e.id})">✏️</button>
+        <button class="proto-action-btn del" onclick="deleteEntry(${e.id})">🗑</button>
+      </div>
+    </div>`).join('');
 }
 
 // ──────────────────────────────────────────────────────────────
