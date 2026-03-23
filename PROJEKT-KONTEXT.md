@@ -1,4 +1,4 @@
-# 🍓 ErntcTracker – Projektkontext für VS Code
+# 🍓 Harvio – Projektkontext für VS Code
 
 ## Was bisher gebaut wurde
 

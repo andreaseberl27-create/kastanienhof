@@ -1,4 +1,4 @@
--- ══ ErntcTracker: Metadaten-Tabellen ══════════════════════════
+-- ══ Harvio: Metadaten-Tabellen ══════════════════════════
 -- Ausführen im Supabase SQL Editor
 
 -- Felder

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ErntcTracker · Admin</title>
+<title>Harvio · Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -305,7 +305,7 @@ tbody tr:hover { background:#fafafa; }
 <div id="loginPage">
   <div class="login-card">
     <div class="login-logo">🍓</div>
-    <div class="login-title">ErntcTracker Admin</div>
+    <div class="login-title">Harvio Admin</div>
     <div class="login-sub">Betriebsleiter-Bereich</div>
     <div class="form-group">
       <label class="form-label">Benutzername</label>
@@ -327,7 +327,7 @@ tbody tr:hover { background:#fafafa; }
 <div id="appPage">
   <div class="app-layout">
     <aside>
-      <div class="sidebar-logo"><span>🍓</span>ErntcTracker</div>
+      <div class="sidebar-logo"><span>🍓</span>Harvio</div>
       <nav class="sidebar-nav">
         <div class="nav-item active" id="nav-mitarbeiter" onclick="navigate('mitarbeiter')"
           data-tip="Pflücker verwalten · QR-Etiketten drucken">
@@ -1228,7 +1228,7 @@ async function printLabels() {
     text.innerHTML = `<div class="label-name">${esc(name)}</div>
       <div class="label-ma">${ma}</div>
       <div class="label-lfd">Etik. ${lfd}</div>
-      <div class="label-app">ErntcTracker</div>`;
+      <div class="label-app">Harvio</div>`;
     label.appendChild(text);
     sheet.appendChild(label);
     new QRCode(qrDiv, { text: qr, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.M });
