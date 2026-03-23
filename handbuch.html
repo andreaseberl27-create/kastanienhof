@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harvio · Handbuch</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f0e8;
+  --surface: #fff;
+  --border: rgba(45,90,39,.18);
+  --text: #1a1a1a;
+  --dim: #7a6a55;
+  --rot: #c0392b;
+  --gruen: #2d5a27;
+  --gruen-hell: #4a8c42;
+  --shadow: 0 2px 8px rgba(0,0,0,.07);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.10);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Inter',sans-serif; background:var(--bg); color:var(--text);
+  min-height:100vh; line-height:1.7;
+}
+
+/* ── Header ── */
+header {
+  background:var(--surface); border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow); position:sticky; top:0; z-index:50;
+}
+.header-inner {
+  max-width:900px; margin:0 auto; padding:14px 24px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.header-logo { display:flex; align-items:center; gap:10px; }
+.header-logo img { width:36px; height:36px; object-fit:contain; }
+.header-logo span { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:var(--text); }
+.header-links { display:flex; gap:10px; flex-wrap:wrap; }
+.launch-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600;
+  text-decoration:none; transition:all .15s; white-space:nowrap;
+}
+.launch-btn.app {
+  background:var(--rot); color:#fff;
+  box-shadow:0 3px 10px rgba(192,57,43,.3);
+}
+.launch-btn.app:hover { background:#a93226; }
+.launch-btn.admin {
+  background:var(--gruen); color:#fff;
+  box-shadow:0 3px 10px rgba(45,90,39,.3);
+}
+.launch-btn.admin:hover { background:#245020; }
+
+/* ── Hero ── */
+.hero {
+  max-width:900px; margin:0 auto; padding:48px 24px 32px;
+  display:flex; align-items:center; gap:32px; flex-wrap:wrap;
+}
+.hero-text { flex:1; min-width:260px; }
+.hero-badge {
+  display:inline-block; background:rgba(45,90,39,.1); color:var(--gruen);
+  border:1px solid rgba(45,90,39,.2); border-radius:99px;
+  font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  padding:4px 12px; margin-bottom:14px;
+}
+.hero h1 {
+  font-family:'Syne',sans-serif; font-size:36px; font-weight:800; line-height:1.2;
+  margin-bottom:14px;
+}
+.hero h1 em { color:var(--rot); font-style:normal; }
+.hero p { font-size:15px; color:var(--dim); max-width:480px; }
+.hero-cards { display:flex; flex-direction:column; gap:10px; min-width:240px; }
+.hero-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px 18px; box-shadow:var(--shadow); text-decoration:none; color:inherit;
+  display:flex; align-items:center; gap:14px; transition:all .15s;
+}
+.hero-card:hover { box-shadow:var(--shadow-lg); transform:translateY(-1px); }
+.hero-card-icon { font-size:28px; flex-shrink:0; }
+.hero-card-label { font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.5px; }
+.hero-card-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin-top:2px; }
+.hero-card-url { font-size:11px; color:var(--gruen); margin-top:3px; font-family:monospace; }
+
+/* ── Layout ── */
+.content { max-width:900px; margin:0 auto; padding:0 24px 80px; }
+
+/* ── Section ── */
+.section { margin-bottom:48px; }
+.section-header {
+  display:flex; align-items:center; gap:12px; margin-bottom:20px;
+  padding-bottom:12px; border-bottom:2px solid var(--border);
+}
+.section-icon { font-size:24px; }
+.section-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; }
+.section-tag {
+  margin-left:auto; background:var(--bg); border:1px solid var(--border);
+  color:var(--dim); font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px;
+}
+
+/* ── Sub-sections ── */
+h3 {
+  font-family:'Syne',sans-serif; font-size:16px; font-weight:700;
+  margin:24px 0 10px; display:flex; align-items:center; gap:8px;
+}
+h3::before { content:''; display:inline-block; width:3px; height:16px; background:var(--gruen); border-radius:2px; flex-shrink:0; }
+p { font-size:14px; color:var(--text); margin-bottom:10px; }
+ul, ol { padding-left:20px; margin-bottom:12px; }
+li { font-size:14px; margin-bottom:5px; }
+strong { font-weight:600; }
+
+/* ── Step cards ── */
+.steps { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+.step {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; display:flex; align-items:flex-start; gap:14px; box-shadow:var(--shadow);
+}
+.step-nr {
+  background:var(--gruen); color:#fff; font-family:'Syne',sans-serif; font-size:13px;
+  font-weight:800; width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+}
+.step-body { flex:1; }
+.step-title { font-weight:600; font-size:14px; margin-bottom:4px; }
+.step-desc { font-size:13px; color:var(--dim); }
+
+/* ── Info boxes ── */
+.info-box {
+  border-radius:10px; padding:13px 16px; margin:14px 0; font-size:13px;
+  display:flex; gap:10px; align-items:flex-start;
+}
+.info-box.tip { background:rgba(45,90,39,.08); border:1px solid rgba(45,90,39,.2); color:var(--gruen); }
+.info-box.warn { background:rgba(192,57,43,.07); border:1px solid rgba(192,57,43,.2); color:var(--rot); }
+.info-box-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.info-box-text { color:var(--text); }
+
+/* ── Tables ── */
+.table-wrap { overflow-x:auto; margin:12px 0 18px; border-radius:10px; border:1px solid var(--border); }
+table { width:100%; border-collapse:collapse; background:var(--surface); font-size:13px; }
+th {
+  background:var(--bg); padding:10px 14px; text-align:left;
+  font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase;
+  letter-spacing:.6px; border-bottom:1px solid var(--border);
+}
+td { padding:10px 14px; border-bottom:1px solid var(--border); }
+tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:#faf6ee; }
+
+/* ── FAQ ── */
+.faq { display:flex; flex-direction:column; gap:8px; }
+.faq-item {
+  background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden;
+}
+.faq-q {
+  padding:14px 16px; font-size:14px; font-weight:600; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  list-style:none; user-select:none;
+}
+.faq-q::-webkit-details-marker { display:none; }
+.faq-q::after { content:'▶'; font-size:10px; color:var(--dim); transition:transform .2s; flex-shrink:0; }
+details[open] .faq-q::after { transform:rotate(90deg); }
+.faq-a { padding:0 16px 14px; font-size:13px; color:var(--dim); line-height:1.6; border-top:1px solid var(--border); padding-top:12px; }
+
+/* ── Nav dot ── */
+.nav-pills {
+  display:flex; gap:6px; flex-wrap:wrap; margin-bottom:28px;
+}
+.nav-pill {
+  background:var(--surface); border:1px solid var(--border); border-radius:99px;
+  padding:5px 14px; font-size:12px; font-weight:600; color:var(--dim);
+  text-decoration:none; transition:all .15s;
+}
+.nav-pill:hover { background:var(--gruen); color:#fff; border-color:var(--gruen); }
+
+/* ── Footer ── */
+footer {
+  border-top:1px solid var(--border); background:var(--surface);
+  text-align:center; padding:20px 24px; font-size:12px; color:var(--dim);
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-inner">
+    <div class="header-logo">
+      <img src="logo.png" alt="Harvio">
+      <span>Harvio · Handbuch</span>
+    </div>
+    <div class="header-links">
+      <a class="launch-btn app" href="https://andreaseberl27-create.github.io/kastanienhof/ernte-app.html" target="_blank">
+        📱 Ernte-App öffnen
+      </a>
+      <a class="launch-btn admin" href="https://andreaseberl27-create.github.io/kastanienhof/admin.html" target="_blank">
+        🖥️ Admin-Panel öffnen
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="hero-text">
+    <div class="hero-badge">Benutzerhandbuch</div>
+    <h1>Digitale <em>Ernte&shy;erfassung</em> für Ihren Hof</h1>
+    <p>Harvio erfasst Erntemengen per QR-Scan in Echtzeit – ohne Installation, direkt im Browser, auch offline.</p>
+  </div>
+  <div class="hero-cards">
+    <a class="hero-card" href="https://andreaseberl27-create.github.io/kastanienhof/ernte-app.html" target="_blank">
+      <div class="hero-card-icon">📱</div>
+      <div>
+        <div class="hero-card-label">Smartphone &amp; Tablet</div>
+        <div class="hero-card-title">Ernte-App</div>
+        <div class="hero-card-url">…/ernte-app.html</div>
+      </div>
+    </a>
+    <a class="hero-card" href="https://andreaseberl27-create.github.io/kastanienhof/admin.html" target="_blank">
+      <div class="hero-card-icon">🖥️</div>
+      <div>
+        <div class="hero-card-label">PC &amp; Laptop</div>
+        <div class="hero-card-title">Admin-Panel</div>
+        <div class="hero-card-url">…/admin.html</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ── Content ── -->
+<div class="content">
+
+  <!-- Nav -->
+  <nav class="nav-pills">
+    <a class="nav-pill" href="#app">Ernte-App</a>
+    <a class="nav-pill" href="#erfassung">Erfassung</a>
+    <a class="nav-pill" href="#protokoll">Protokoll</a>
+    <a class="nav-pill" href="#statistik">Statistik</a>
+    <a class="nav-pill" href="#admin">Admin-Panel</a>
+    <a class="nav-pill" href="#stammdaten">Stammdaten</a>
+    <a class="nav-pill" href="#auswertung">Auswertung</a>
+    <a class="nav-pill" href="#faq">FAQ</a>
+  </nav>
+
+  <!-- ══ ERNTE-APP ══ -->
+  <div class="section" id="app">
+    <div class="section-header">
+      <span class="section-icon">📱</span>
+      <h2 class="section-title">Die Ernte-App</h2>
+      <span class="section-tag">Feld · Smartphone</span>
+    </div>
+
+    <p>Die App ist für den Einsatz auf dem Feld gedacht und läuft auf jedem Smartphone oder Tablet direkt im Browser – keine Installation nötig. Sie kann auch als App auf dem Homescreen gespeichert werden.</p>
+
+    <h3>Erster Start – Zugangsdaten einrichten</h3>
+    <p>Beim allerersten Öffnen auf einem neuen Gerät müssen einmalig die Zugangsdaten im Tab <strong>Einstellungen ⚙️</strong> unter <em>Erweiterte Einstellungen</em> eingegeben werden:</p>
+    <ul>
+      <li><strong>Supabase URL</strong> und <strong>API-Key</strong> – diese Werte erhalten Sie vom Admin</li>
+      <li><strong>Domain</strong> – der Domainname für den Login (z. B. <code>harvio.app</code>)</li>
+      <li>Danach auf <strong>Speichern</strong> tippen → Verbindung wird automatisch hergestellt</li>
+    </ul>
+
+    <div class="info-box tip">
+      <span class="info-box-icon">💡</span>
+      <span class="info-box-text">Nach dem Speichern werden alle Stammdaten (Felder, Sorten, Pflücker, Gebinde) automatisch geladen und lokal gespeichert. Die App funktioniert danach auch ohne Internetverbindung.</span>
+    </div>
+  </div>
+
+  <!-- ══ ERFASSUNG ══ -->
+  <div class="section" id="erfassung">
+    <div class="section-header">
+      <span class="section-icon">➕</span>
+      <h2 class="section-title">Tab: Erfassung</h2>
+      <span class="section-tag">Tägliche Arbeit</span>
+    </div>
+
+    <p>Dies ist der Haupt-Bildschirm für die tägliche Arbeit. Der Workflow in drei Schritten:</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-nr">1</div>
+        <div class="step-body">
+          <div class="step-title">Schicht einrichten</div>
+          <div class="step-desc">Einmalig pro Schicht: Tippen Sie auf das Schicht-Feld oben. Wählen Sie <strong>Feld</strong> (Pflicht) und <strong>Gebinde</strong> (Pflicht). Sorte ist optional. Die Fruchtart wird automatisch aus dem Feld übernommen, kann aber geändert werden. Bestätigen mit <strong>✅ Übernehmen</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-nr">2</div>
+        <div class="step-body">
+          <div class="step-title">Menge wählen (Ausnahmefall)</div>
+          <div class="step-desc">Standardmäßig wird <strong>1× Gebinde</strong> pro Scan gebucht. Nur wenn ein Pflücker ein nicht volles Gebinde abgibt: Schaltflächen <strong>¾×</strong>, <strong>½×</strong>, <strong>¼×</strong> tippen oder eigenen Wert eingeben. Die Menge setzt sich nach jedem Scan automatisch auf 1× zurück.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-nr">3</div>
+        <div class="step-body">
+          <div class="step-title">QR-Code scannen</div>
+          <div class="step-desc">Großen <strong>Scannen</strong>-Button tippen. Kamera öffnet sich. QR-Code des Pflückers in den Rahmen halten. Bei Erfolg: kurzer Piepton + grüne Bestätigung mit Pflückername. Bei Doppelscan: roter Warnton + Fehlermeldung.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box warn">
+      <span class="info-box-icon">⚠️</span>
+      <span class="info-box-text"><strong>Doppelerfassung:</strong> Wird derselbe QR-Code nochmals gescannt, erscheint eine Warnung mit dem Zeitpunkt des ersten Scans. Der zweite Scan wird nicht gebucht.</span>
+    </div>
+
+    <h3>Tagesübersicht</h3>
+    <p>Unterhalb des Scan-Buttons sehen Sie live: Anzahl Scans heute, Gesamtgewicht und die letzten Erfassungen mit Name, Uhrzeit, Gewicht und QR-Nummer.</p>
+  </div>
+
+  <!-- ══ PROTOKOLL ══ -->
+  <div class="section" id="protokoll">
+    <div class="section-header">
+      <span class="section-icon">📋</span>
+      <h2 class="section-title">Tab: Protokoll</h2>
+      <span class="section-tag">Tageseinträge</span>
+    </div>
+    <p>Zeigt alle Einträge des heutigen Tages.</p>
+    <ul>
+      <li><strong>✏️ Bearbeiten:</strong> Menge eines Eintrags korrigieren → Gewicht wird automatisch neu berechnet</li>
+      <li><strong>🗑️ Löschen:</strong> Eintrag endgültig entfernen</li>
+    </ul>
+    <div class="info-box tip">
+      <span class="info-box-icon">💡</span>
+      <span class="info-box-text">Einträge aus der Vergangenheit können nur im Admin-Panel unter <strong>Protokoll</strong> bearbeitet werden.</span>
+    </div>
+  </div>
+
+  <!-- ══ STATISTIK ══ -->
+  <div class="section" id="statistik">
+    <div class="section-header">
+      <span class="section-icon">📊</span>
+      <h2 class="section-title">Tab: Statistik</h2>
+      <span class="section-tag">Tagesauswertung</span>
+    </div>
+    <p>Tagesauswertung auf einen Blick:</p>
+    <ul>
+      <li>Gesamtkilogramm und Anzahl Gebinde</li>
+      <li>Aufschlüsselung nach Pflücker (Balkendiagramm)</li>
+      <li>Stundenverteilung der Ernte</li>
+      <li>Gruppenübersichten nach Feld, Sorte und Gebinde</li>
+    </ul>
+  </div>
+
+  <!-- ══ ADMIN ══ -->
+  <div class="section" id="admin">
+    <div class="section-header">
+      <span class="section-icon">🖥️</span>
+      <h2 class="section-title">Das Admin-Panel</h2>
+      <span class="section-tag">PC · Verwaltung</span>
+    </div>
+
+    <p>Das Admin-Panel wird auf einem PC oder Laptop im Browser geöffnet. Hier werden Stammdaten gepflegt, Auswertungen abgerufen und das Protokoll verwaltet.</p>
+
+    <h3>Anmeldung</h3>
+    <p>Beim Öffnen erscheint ein Login-Fenster. Benutzername und Passwort eingeben. Es gibt zwei Rollen:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rolle</th><th>Berechtigungen</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Admin</strong></td><td>Alles – inkl. Betriebsleiter-Zugänge anlegen und löschen</td></tr>
+          <tr><td><strong>Betriebsleiter</strong></td><td>Alle Stammdaten und Protokoll – kein Benutzermanagement</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ STAMMDATEN ══ -->
+  <div class="section" id="stammdaten">
+    <div class="section-header">
+      <span class="section-icon">⚙️</span>
+      <h2 class="section-title">Stammdaten verwalten</h2>
+      <span class="section-tag">Admin-Panel · Sidebar</span>
+    </div>
+
+    <h3>👥 Mitarbeiter (Pflücker)</h3>
+    <ul>
+      <li><strong>Neu anlegen:</strong> Name und 5-stellige Mitarbeiternummer eingeben → Speichern</li>
+      <li><strong>QR-Etikett drucken:</strong> Drucker-Symbol neben dem Namen → QR-Codes als Druckdialog</li>
+      <li><strong>Deaktivieren:</strong> Pflücker bleibt in der Datenbank, erscheint aber nicht mehr in der App</li>
+    </ul>
+
+    <h3>🔑 Betriebsleiter</h3>
+    <p>Zugänge für weitere Personen, die das Admin-Panel nutzen sollen. Nur der Admin kann Betriebsleiter anlegen und löschen.</p>
+
+    <h3>🗺️ Felder</h3>
+    <p>Alle Feldstücke des Betriebs. Felder können aktiviert/deaktiviert werden – deaktivierte erscheinen nicht in der App.</p>
+
+    <h3>🌱 Fruchtarten &amp; Sorten</h3>
+    <p>Fruchtarten sind übergeordnete Kategorien (z. B. Erdbeere, Himbeere). Sorten werden je Fruchtart angelegt (z. B. Elsanta, Senga Sengana) und in der App bei der Schichteinrichtung angezeigt.</p>
+
+    <h3>📦 Gebinde</h3>
+    <p>Behältertypen mit ihrem Gewicht:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Beispiel</th><th>Gewicht</th><th>Berechnung</th></tr></thead>
+        <tbody>
+          <tr><td>Steige 2 kg</td><td>2,0 kg</td><td>Menge × 2,0 kg</td></tr>
+          <tr><td>Steige 5 kg</td><td>5,0 kg</td><td>Menge × 5,0 kg</td></tr>
+          <tr><td>Manuell</td><td>–</td><td>Gewicht wird manuell eingegeben</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ PROTOKOLL ADMIN ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📋</span>
+      <h2 class="section-title">Protokoll</h2>
+      <span class="section-tag">Admin-Panel</span>
+    </div>
+    <p>Vollständige Liste aller Ernteeinträge aus der Datenbank mit Filter nach Zeitraum, Feld und Pflücker.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Spalte</th><th>Bedeutung</th></tr></thead>
+        <tbody>
+          <tr><td>Datum / Zeit</td><td>Tag und Uhrzeit des Scans</td></tr>
+          <tr><td>Pflücker</td><td>Name des Erntehelfers</td></tr>
+          <tr><td>Feld / Sorte</td><td>Feldstück und Fruchtsorte</td></tr>
+          <tr><td>Korbtyp</td><td>Verwendetes Gebinde</td></tr>
+          <tr><td>Gewicht</td><td>Berechnetes Gewicht (Menge × Gebindegewicht)</td></tr>
+          <tr><td>QR-Nr.</td><td>Laufende Nummer des gescannten Etiketts</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Einträge können bearbeitet oder endgültig gelöscht werden.</p>
+  </div>
+
+  <!-- ══ AUSWERTUNG ══ -->
+  <div class="section" id="auswertung">
+    <div class="section-header">
+      <span class="section-icon">📈</span>
+      <h2 class="section-title">Auswertung</h2>
+      <span class="section-tag">Admin-Panel · Dashboard</span>
+    </div>
+    <p>Dashboard mit Kennzahlen und Diagrammen. Schnellauswahl: <strong>Heute / Diese Woche / Dieser Monat / Gesamt</strong> oder eigener Datumsbereich.</p>
+    <ul>
+      <li>Gesamt-Erntekilogramm und Gebinde-Anzahl</li>
+      <li>Aktive Pflücker und Durchschnitt je Person</li>
+      <li>Balkendiagramme: nach Feld, Pflücker, Qualität, Sorte</li>
+      <li>Ernte nach Tag (14 Tage) und Kalenderwoche (8 Wochen)</li>
+      <li>Stundenverteilung der Ernte</li>
+    </ul>
+  </div>
+
+  <!-- ══ FAQ ══ -->
+  <div class="section" id="faq">
+    <div class="section-header">
+      <span class="section-icon">❓</span>
+      <h2 class="section-title">Häufige Fragen</h2>
+    </div>
+    <div class="faq">
+
+      <details class="faq-item">
+        <summary class="faq-q">Ein Pflücker hat ein neues Etikett bekommen – was muss ich tun?</summary>
+        <div class="faq-a">Nichts weiter. Das neue Etikett enthält eine neue laufende Nummer, die beim ersten Scan automatisch dem Pflücker zugeordnet wird.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">Neue Felder oder Pflücker erscheinen nicht in der App.</summary>
+        <div class="faq-a">Im Tab <strong>Einstellungen → Stammdaten neu laden</strong> tippen. Die App synchronisiert sich dann neu mit der Datenbank.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">Ein Eintrag wurde versehentlich doppelt gebucht.</summary>
+        <div class="faq-a">Im Admin-Panel unter <strong>Protokoll</strong> den betroffenen Eintrag suchen und löschen.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">Die App zeigt „Offline".</summary>
+        <div class="faq-a">Kein Problem – Einträge werden lokal gespeichert. Sobald wieder WLAN oder Mobilfunk verfügbar ist, werden sie automatisch hochgeladen.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">Wie installiere ich die App auf dem Homescreen?</summary>
+        <div class="faq-a"><strong>Android:</strong> In Chrome oben rechts Menü → „Zum Startbildschirm hinzufügen".<br><strong>iPhone/iPad:</strong> In Safari unten Teilen-Button → „Zum Home-Bildschirm".</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">Wie ändere ich mein Passwort?</summary>
+        <div class="faq-a">Im Admin-Panel links unten auf <strong>Passwort ändern</strong> klicken.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">Technische Hinweise für den Admin</summary>
+        <div class="faq-a">
+          Die Daten werden in einer <strong>Supabase-Datenbank</strong> (PostgreSQL) gespeichert. Ein Internetzugang ist für die Synchronisierung erforderlich. QR-Etiketten werden direkt im Browser als Druckdialog erzeugt – für den Dauereinsatz empfehlen sich wetterfeste Etiketten.
+        </div>
+      </details>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+  Harvio · Digitale Ernte&shy;erfassung ·
+  <a href="https://andreaseberl27-create.github.io/kastanienhof/ernte-app.html" target="_blank" style="color:var(--rot);text-decoration:none;">Ernte-App</a> ·
+  <a href="https://andreaseberl27-create.github.io/kastanienhof/admin.html" target="_blank" style="color:var(--gruen);text-decoration:none;">Admin-Panel</a>
+</footer>
+
+</body>
+</html>

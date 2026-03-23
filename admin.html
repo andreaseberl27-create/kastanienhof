@@ -4,17 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Harvio · Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root {
-  --bg: #f1f5f9; --surface: #fff; --border: #e2e8f0;
-  --text: #1e293b; --dim: #64748b;
-  --primary: #e8244a; --primary-dk: #c01a39;
-  --green: #16a34a; --red: #dc2626; --orange: #ea580c;
-  --sidebar: #1e293b; --sidebar-dim: #94a3b8;
-  --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
-  --shadow-lg: 0 10px 25px rgba(0,0,0,.15);
+  --bg: #f5f0e8; --surface: #fff; --border: rgba(45,90,39,.18);
+  --text: #1a1a1a; --dim: #7a6a55;
+  --primary: #c0392b; --primary-dk: #922b21;
+  --green: #2d5a27; --green-bright: #4a8c42; --red: #c0392b; --orange: #c05c1a;
+  --sidebar: #1c2b1a; --sidebar-dim: #8aaa85;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.12);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
@@ -22,13 +23,14 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
 /* ── Login ── */
 #loginPage {
   min-height:100vh; display:flex; align-items:center; justify-content:center;
-  background:var(--sidebar);
+  background:var(--bg);
 }
 .login-card {
   background:var(--surface); border-radius:16px; padding:40px; width:360px;
-  box-shadow:var(--shadow-lg);
+  box-shadow:var(--shadow-lg); border:1px solid var(--border);
 }
-.login-logo { font-size:32px; margin-bottom:4px; }
+.login-logo { margin-bottom:8px; }
+.login-logo img { width:64px; height:64px; object-fit:contain; }
 .login-title { font-size:20px; font-weight:700; margin-bottom:4px; }
 .login-sub { font-size:13px; color:var(--dim); margin-bottom:28px; }
 .form-group { margin-bottom:16px; }
@@ -56,10 +58,11 @@ aside {
   height:100vh; display:flex; flex-direction:column; z-index:10;
 }
 .sidebar-logo {
-  padding:24px 20px 20px; border-bottom:1px solid rgba(255,255,255,.08);
+  padding:20px 20px 18px; border-bottom:1px solid rgba(255,255,255,.08);
   font-size:18px; font-weight:700; color:#fff; display:flex; align-items:center; gap:10px;
+  font-family:'Syne',sans-serif; letter-spacing:.3px;
 }
-.sidebar-logo span { font-size:22px; }
+.sidebar-logo img { width:32px; height:32px; object-fit:contain; border-radius:6px; }
 .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
 .nav-item {
   display:flex; align-items:center; gap:10px; padding:10px 20px;
@@ -67,7 +70,7 @@ aside {
   transition:background .15s, color .15s; border-radius:0;
 }
 .nav-item:hover { background:rgba(255,255,255,.05); color:#fff; }
-.nav-item.active { background:rgba(232,36,74,.15); color:#fff; border-left:3px solid var(--primary); }
+.nav-item.active { background:rgba(74,140,66,.18); color:#fff; border-left:3px solid var(--green-bright); }
 .nav-item .icon { font-size:16px; width:20px; text-align:center; }
 .sidebar-user {
   padding:16px 20px; border-top:1px solid rgba(255,255,255,.08);
@@ -85,7 +88,7 @@ main { margin-left:240px; flex:1; padding:32px; }
 .page-header {
   display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;
 }
-.page-title { font-size:22px; font-weight:700; }
+.page-title { font-size:22px; font-weight:700; font-family:'Syne',sans-serif; }
 .page-title small { font-size:13px; font-weight:400; color:var(--dim); margin-left:8px; }
 .btn-add {
   background:var(--primary); color:#fff; border:none; padding:9px 18px;
@@ -97,23 +100,24 @@ main { margin-left:240px; flex:1; padding:32px; }
 /* ── Table ── */
 .table-card { background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
 table { width:100%; border-collapse:collapse; }
-thead { background:#f8fafc; }
+thead { background:var(--bg); }
 th { padding:12px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--dim);
   text-transform:uppercase; letter-spacing:.8px; border-bottom:1px solid var(--border); }
 td { padding:12px 16px; font-size:14px; border-bottom:1px solid var(--border); }
 tr:last-child td { border-bottom:none; }
-tbody tr:hover { background:#fafafa; }
+tbody tr:hover { background:#faf6ee; }
 .badge {
   display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
   border-radius:99px; font-size:11px; font-weight:600;
 }
 .badge-green { background:#dcfce7; color:var(--green); }
 .badge-red { background:#fee2e2; color:var(--red); }
-.badge-blue { background:#dbeafe; color:#1d4ed8; }
-.badge-orange { background:#ffedd5; color:#c2410c; }
+.badge-blue { background:#d6f0d6; color:var(--green); }
+.badge-orange { background:#fdebd0; color:var(--orange); }
 .badge-nr {
-  font-family:'SF Mono',monospace; background:#f1f5f9; color:var(--dim);
+  font-family:'SF Mono',monospace; background:var(--bg); color:var(--dim);
   padding:2px 8px; border-radius:6px; font-size:13px; font-weight:700;
+  border:1px solid var(--border);
 }
 .actions { display:flex; gap:6px; }
 .btn-icon {
@@ -262,7 +266,7 @@ tbody tr:hover { background:#fafafa; }
 .bar-row:last-child { margin-bottom:0; }
 .bar-label { font-size:12px; color:var(--text); min-width:100px; max-width:130px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
-.bar-track { flex:1; background:#f1f5f9; border-radius:99px; height:20px; position:relative; overflow:hidden; }
+.bar-track { flex:1; background:var(--bg); border-radius:99px; height:20px; position:relative; overflow:hidden; border:1px solid var(--border); }
 .bar-fill { height:100%; border-radius:99px; background:var(--primary); transition:width .4s ease; min-width:2px; }
 .bar-fill.green { background:var(--green); }
 .bar-fill.blue  { background:#3b82f6; }
@@ -290,7 +294,7 @@ tbody tr:hover { background:#fafafa; }
 .badge-qual {
   display:inline-block; padding:1px 7px; border-radius:99px;
   font-size:11px; font-weight:700; font-family:monospace;
-  background:#f1f5f9; color:var(--dim);
+  background:var(--bg); color:var(--dim);
 }
 .badge-qual-A { background:#dcfce7; color:#15803d; }
 .badge-qual-B { background:#fef9c3; color:#a16207; }
@@ -304,7 +308,7 @@ tbody tr:hover { background:#fafafa; }
 <!-- ── Login ── -->
 <div id="loginPage">
   <div class="login-card">
-    <div class="login-logo">🍓</div>
+    <div class="login-logo"><img src="logo.png" alt="Harvio"></div>
     <div class="login-title">Harvio Admin</div>
     <div class="login-sub">Betriebsleiter-Bereich</div>
     <div class="form-group">
@@ -327,7 +331,7 @@ tbody tr:hover { background:#fafafa; }
 <div id="appPage">
   <div class="app-layout">
     <aside>
-      <div class="sidebar-logo"><span>🍓</span>Harvio</div>
+      <div class="sidebar-logo"><img src="logo.png" alt="Harvio">Harvio</div>
       <nav class="sidebar-nav">
         <div class="nav-item active" id="nav-mitarbeiter" onclick="navigate('mitarbeiter')"
           data-tip="Pflücker verwalten · QR-Etiketten drucken">
