@@ -505,7 +505,6 @@
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="loginUser()">Anmelden</button>
-    <span class="login-setup" onclick="openLoginSetup()">⚙️ Supabase einrichten</span>
   </div>
 </div>
 
@@ -673,31 +672,6 @@
     <button class="sett-btn secondary" onclick="testConnection()">🔌 Verbindung testen</button>
   </div>
 
-  <!-- Erweiterte Einstellungen (eingeklappt) -->
-  <div style="padding:0 16px">
-    <div onclick="toggleAdvanced()" style="cursor:pointer;font-size:12px;color:var(--text-dim);font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:10px 0;display:flex;align-items:center;gap:6px;user-select:none">
-      <span id="advArrow">▶</span> Erweiterte Einstellungen
-    </div>
-  </div>
-  <div id="advancedSection" style="display:none">
-    <div class="settings-group">
-      <label class="settings-label">Project URL</label>
-      <input class="settings-input" id="inputUrl" type="url" placeholder="https://xyz.supabase.co" autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
-    <div class="settings-group">
-      <label class="settings-label">Publishable Key</label>
-      <input class="settings-input" id="inputKey" type="password" placeholder="eyJhbGciOiJIUzI1NiIs…" autocomplete="off">
-    </div>
-    <div class="settings-group">
-      <label class="settings-label">E-Mail-Domain</label>
-      <input class="settings-input" id="inputDomain" type="text" placeholder="@kastanienhof.local" autocomplete="off" autocorrect="off" spellcheck="false">
-      <div style="font-size:11px;color:var(--text-dim);margin-top:6px">Login: <span style="color:var(--accent)" id="domainPreview">anna@kastanienhof.local</span></div>
-    </div>
-    <div class="settings-group">
-      <button class="sett-btn primary" onclick="saveSettings()">💾 Speichern &amp; Verbinden</button>
-      <button class="sett-btn danger"  onclick="clearSettings()">🗑️ Konfiguration löschen</button>
-    </div>
-  </div>
 
 </div>
 
@@ -754,6 +728,8 @@ const PRESET_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
 const PRESET_DOMAIN = '@kastanienhof.local';
 // ─────────────────────────────────────────────────────────────
 
+let BETRIEB_ID = localStorage.getItem('sb_betrieb_id') || null;
+
 let FELDER   = JSON.parse(localStorage.getItem('sb_felder')      || 'null') || ['Feld A','Feld B','Feld C','Feld Nord','Feld Süd'];
 let SORTEN   = JSON.parse(localStorage.getItem('sb_sorten')      || 'null') || ['Elsanta','Honeoye','Senga Sengana','Malling Centenary','Rumba','Polka'];
 let PFLÜCKER = JSON.parse(localStorage.getItem('sb_pfluecker')   || 'null') || ['Anna','Bernd','Carlos','Daria','Erika','Fatima','Georg','Hana'];
@@ -798,11 +774,6 @@ function showPage(name) {
   if(name==='protokoll') renderProtokoll();
   if(name==='erfassung') renderRecentScans();
   if(name==='einstellungen') {
-    document.getElementById('inputUrl').value    = CONFIG.url;
-    document.getElementById('inputKey').value    = CONFIG.key;
-    document.getElementById('inputDomain').value = authDomain();
-    const preview = document.getElementById('domainPreview');
-    if (preview) preview.textContent = 'anna' + authDomain();
     updateSettingsStatus();
   }
 }
@@ -941,6 +912,12 @@ function showToast(msg,bg){const t=document.getElementById('toast');t.textConten
 // ── AUTH ──────────────────────────────────────────────────────
 
 function authDomain() {
+  // Auf harvio.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.harvio.com → @kastanienhof.harvio.com)
+  const host = window.location.hostname;
+  if (host.endsWith('.harvio.com')) {
+    const sub = host.split('.')[0];
+    return '@' + sub + '.harvio.com';
+  }
   const d = PRESET_DOMAIN || localStorage.getItem('sb_domain') || '@kastanienhof.local';
   return d.startsWith('@') ? d : '@' + d;
 }
@@ -953,7 +930,7 @@ function updateLoginHint() {
 
 function getSession()      { try { return JSON.parse(localStorage.getItem('sb_session') || 'null'); } catch { return null; } }
 function setSession(s)     { localStorage.setItem('sb_session', JSON.stringify(s)); }
-function clearSession()    { localStorage.removeItem('sb_session'); }
+function clearSession()    { localStorage.removeItem('sb_session'); localStorage.removeItem('sb_betrieb_id'); BETRIEB_ID = null; }
 function authToken()       { return getSession()?.access_token || null; }
 
 async function loginUser() {
@@ -1015,12 +992,25 @@ async function refreshSession() {
   } catch { return false; }
 }
 
-function showApp(username) {
+async function loadBetriebId() {
+  try {
+    const res = await fetch(`${CONFIG.url}/rest/v1/betrieb_mitglieder?select=betrieb_id&limit=1`, { headers: sbHeaders() });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (rows.length) {
+      BETRIEB_ID = rows[0].betrieb_id;
+      localStorage.setItem('sb_betrieb_id', BETRIEB_ID);
+    }
+  } catch {}
+}
+
+async function showApp(username) {
   document.getElementById('loginOverlay').classList.add('hidden');
   document.getElementById('loggedInUser').textContent    = username;
   document.getElementById('userSection').style.display   = 'block';
   document.getElementById('noUserSection').style.display = 'none';
   if (CONFIG.url && CONFIG.key) {
+    await loadBetriebId();
     setSyncUI('idle');
     loadMetadata();
     if (localStorage.getItem('sb_pending')) showToast('🔄 Offline-Einträge werden synchronisiert…','var(--blau)');
@@ -1028,10 +1018,6 @@ function showApp(username) {
   }
 }
 
-function openLoginSetup() {
-  document.getElementById('loginOverlay').classList.add('hidden');
-  showPage('einstellungen');
-}
 
 async function checkAuth() {
   if (!CONFIG.url || !CONFIG.key) {
@@ -1092,6 +1078,7 @@ function entryToRow(e) {
   return {
     id: e.id, datum: e.datum, uhrzeit: e.uhrzeit, stunde: e.stunde, reihe: e.reihe ?? null,
     menge:        e.menge        ?? 1,
+    betrieb_id:   BETRIEB_ID     ?? null,
     feld_id:      e.feld_id      ?? null,
     sorte_id:     e.sorte_id     ?? null,
     pfluecker_id: e.pfluecker_id ?? null,
@@ -1502,23 +1489,6 @@ async function saveEditEntry() {
 
 // ── EINSTELLUNGEN HANDLER ──────────────────────────────────────
 
-function saveSettings() {
-  const url    = document.getElementById('inputUrl').value.trim();
-  const key    = document.getElementById('inputKey').value.trim();
-  const domain = document.getElementById('inputDomain').value.trim();
-  if (!url || !key) { showToast('⚠️ URL und Key ausfüllen!', 'var(--braun)'); return; }
-  localStorage.setItem('sb_url', url);
-  localStorage.setItem('sb_key', key);
-  if (domain) localStorage.setItem('sb_domain', domain.startsWith('@') ? domain : '@' + domain);
-  showToast('✅ Gespeichert');
-  updateSettingsStatus();
-  setSyncUI('idle');
-  // Wenn noch kein Login → Login-Overlay zeigen
-  if (!getSession()) {
-    document.getElementById('loginOverlay').classList.remove('hidden');
-  }
-}
-
 async function testConnection() {
   if (!CONFIG.url || !CONFIG.key) { showToast('⚠️ Erst konfigurieren!', 'var(--braun)'); return; }
   updateSettingsStatus('syncing', 'Teste Verbindung…', '');
@@ -1534,16 +1504,6 @@ async function testConnection() {
   }
 }
 
-function clearSettings() {
-  if (!confirm('Konfiguration löschen? Lokale Daten bleiben erhalten.')) return;
-  ['sb_url','sb_key','sb_pending'].forEach(k => localStorage.removeItem(k));
-  document.getElementById('inputUrl').value = '';
-  document.getElementById('inputKey').value = '';
-  updateSettingsStatus();
-  setSyncUI('idle');
-  showToast('🗑️ Konfiguration gelöscht', 'var(--braun)');
-}
-
 function updateSettingsStatus(status, text, sub) {
   const dot   = document.getElementById('statusDot');
   const txt   = document.getElementById('statusText');
@@ -1553,21 +1513,11 @@ function updateSettingsStatus(status, text, sub) {
     const ok = CONFIG.url && CONFIG.key;
     status = ok ? 'synced' : 'offline';
     text   = ok ? 'Konfiguriert' : 'Nicht konfiguriert';
-    sub    = ok ? new URL(CONFIG.url).hostname : 'Supabase URL und Anon Key eingeben';
+    sub    = ok ? new URL(CONFIG.url).hostname : '';
   }
   dot.className     = 'status-dot ' + status;
   txt.textContent   = text;
   subEl.textContent = sub !== undefined ? sub : '';
-}
-
-// ── ADVANCED SETTINGS TOGGLE ──────────────────────────────────
-function toggleAdvanced() {
-  const sec = document.getElementById('advancedSection');
-  const arrow = document.getElementById('advArrow');
-  if (!sec) return;
-  const open = sec.style.display !== 'none';
-  sec.style.display = open ? 'none' : 'block';
-  if (arrow) arrow.textContent = open ? '▶' : '▼';
 }
 
 // ── SCAN-FIRST WORKFLOW FUNCTIONS ─────────────────────────────

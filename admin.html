@@ -533,6 +533,7 @@ let editId = null;
 let qrEmployee = null;
 let currentUserRole = null;
 let currentUserId = null;
+let currentBetriebId = null;
 
 const cache = { mitarbeiter:[], betriebsleiter:[], felder:[], fruchtarten:[], sorten:[], qualitaeten:[], gebinde:[] };
 
@@ -582,6 +583,12 @@ async function sbDelete(table, id) {
 
 // ── AUTH ─────────────────────────────────────────────────────
 function authDomain() {
+  // Auf harvio.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.harvio.com → @kastanienhof.harvio.com)
+  const host = window.location.hostname;
+  if (host.endsWith('.harvio.com')) {
+    const sub = host.split('.')[0];
+    return '@' + sub + '.harvio.com';
+  }
   return SB_DOMAIN.startsWith('@') ? SB_DOMAIN : '@' + SB_DOMAIN;
 }
 async function login() {
@@ -615,6 +622,7 @@ async function logout() {
   session = null;
   currentUserRole = null;
   currentUserId = null;
+  currentBetriebId = null;
   localStorage.removeItem('admin_session');
   document.getElementById('appPage').style.display  = 'none';
   document.getElementById('loginPage').style.display = 'flex';
@@ -640,8 +648,8 @@ async function showApp(username) {
   document.getElementById('sidebarUser').textContent = username;
   // Rolle des aktuellen Nutzers laden
   try {
-    const me = await sbGet('betrieb_mitglieder', `username=eq.${encodeURIComponent(username)}&select=rolle,user_id`);
-    if (me.length) { currentUserRole = me[0].rolle; currentUserId = me[0].user_id; }
+    const me = await sbGet('betrieb_mitglieder', `username=eq.${encodeURIComponent(username)}&select=betrieb_id,rolle,user_id`);
+    if (me.length) { currentUserRole = me[0].rolle; currentUserId = me[0].user_id; currentBetriebId = me[0].betrieb_id; }
   } catch {}
   const roleEl = document.getElementById('sidebarRole');
   if (roleEl) roleEl.textContent = currentUserRole === 'admin' ? '★ Admin' : '● Betriebsleiter';
@@ -1071,7 +1079,7 @@ async function saveModal() {
     if (editId) {
       await sbPatch(cfg.table, editId, data);
     } else {
-      await sbPost(cfg.table, data);
+      await sbPost(cfg.table, { ...data, betrieb_id: currentBetriebId });
     }
     closeModal();
     await loadSection(currentSection);
@@ -1205,7 +1213,8 @@ async function printLabels() {
   // Etiketten in DB anlegen (unique constraint verhindert Doppelungen)
   const rows = Array.from({ length: count }, (_, i) => ({
     pfluecker_nr: qrEmployee.mitarbeiter_nr,
-    lfd_nr: start + i
+    lfd_nr: start + i,
+    betrieb_id: currentBetriebId
   }));
   try {
     await fetch(`${SB_URL}/rest/v1/etiketten`, {

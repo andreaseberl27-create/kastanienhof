@@ -253,22 +253,12 @@ footer {
 
     <p>Die App ist für den Einsatz auf dem Feld gedacht und läuft auf jedem Smartphone oder Tablet direkt im Browser – keine Installation nötig. Sie kann auch als App auf dem Homescreen gespeichert werden.</p>
 
-    <h3>Erster Start – Zugangsdaten einrichten</h3>
-    <p>Beim allerersten Öffnen erscheint der Login-Bildschirm. Tippen Sie dort auf <strong>⚙️ Supabase einrichten</strong>, um die Verbindung zu konfigurieren. Alternativ: nach dem Login im Tab <strong>Einstellungen ⚙️</strong> auf <em>Erweiterte Einstellungen</em> tippen.</p>
-    <p>Folgende Werte sind einzutragen (erhalten Sie vom Admin):</p>
-    <ul>
-      <li><strong>Project URL</strong> – die Supabase-Projekt-URL (z. B. <code>https://xyz.supabase.co</code>)</li>
-      <li><strong>Publishable Key</strong> – der öffentliche API-Schlüssel des Projekts</li>
-      <li><strong>E-Mail-Domain</strong> – wird automatisch an den Benutzernamen angehängt (z. B. <code>@kastanienhof.local</code>)</li>
-    </ul>
-    <p>Danach auf <strong>💾 Speichern &amp; Verbinden</strong> tippen.</p>
-
     <h3>Anmelden</h3>
-    <p>Auf dem Login-Bildschirm nur den <strong>Kurznamen</strong> eingeben (z. B. <code>anna</code>) – die Domain wird automatisch ergänzt. Passwort eingeben und anmelden.</p>
+    <p>Beim Öffnen der App erscheint direkt der Login-Bildschirm. Nur den <strong>Kurznamen</strong> eingeben (z. B. <code>anna</code>) – die Domain wird automatisch ergänzt. Passwort eingeben und anmelden. Keine weitere Einrichtung nötig.</p>
 
     <div class="info-box tip">
       <span class="info-box-icon">💡</span>
-      <span class="info-box-text">Nach dem Speichern werden alle Stammdaten (Felder, Sorten, Pflücker, Gebinde) automatisch geladen und lokal gespeichert. Die App funktioniert danach auch ohne Internetverbindung.</span>
+      <span class="info-box-text">Nach dem Login werden alle Stammdaten (Felder, Sorten, Pflücker, Gebinde) automatisch geladen und lokal gespeichert. Die App funktioniert danach auch ohne Internetverbindung.</span>
     </div>
   </div>
 
@@ -492,7 +482,7 @@ footer {
       <details class="faq-item">
         <summary class="faq-q">Technische Hinweise für den Admin</summary>
         <div class="faq-a">
-          Die Daten werden in einer <strong>Supabase-Datenbank</strong> (PostgreSQL) gespeichert. Ein Internetzugang ist für die Synchronisierung erforderlich. QR-Etiketten werden direkt im Browser als Druckdialog erzeugt – für den Dauereinsatz empfehlen sich wetterfeste Etiketten.
+          Die Daten werden in einer sicheren Cloud-Datenbank gespeichert. Jeder Betrieb sieht ausschließlich seine eigenen Daten. Ein Internetzugang ist für die Synchronisierung erforderlich. QR-Etiketten werden direkt im Browser als Druckdialog erzeugt – für den Dauereinsatz empfehlen sich wetterfeste Etiketten.
         </div>
       </details>
 
