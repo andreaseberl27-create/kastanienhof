@@ -123,28 +123,19 @@ body {
     <div class="field">
       <label>Name des Betriebs</label>
       <input type="text" id="betriebName" placeholder="z. B. Obsthof Mustermann"
-             autocomplete="organization" oninput="onBetriebNameInput()"
-             onkeydown="if(event.key==='Enter')document.getElementById('subdomainInput').focus()">
+             autocomplete="organization"
+             onkeydown="if(event.key==='Enter')document.getElementById('email').focus()">
     </div>
 
     <div class="field">
-      <label>Ihre Adresse bei Ripelog</label>
-      <div class="subdomain-wrap" id="subdomainWrap">
-        <input type="text" id="subdomainInput" placeholder="meinbetrieb"
-               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-               oninput="onSubdomainInput()"
-               onkeydown="if(event.key==='Enter')document.getElementById('pw1').focus()">
-        <div class="subdomain-suffix">.ripelog.com</div>
-      </div>
-      <div class="hint dim" id="subdomainHint">Kleinbuchstaben, Zahlen, Bindestriche</div>
-      <div class="preview-box" id="previewBox">
-        App-Adresse: <strong id="previewUrl">–</strong><br>
-        Login: <strong id="previewLogin">–</strong>
-      </div>
+      <label>E-Mail (Admin-Zugang)</label>
+      <input type="email" id="email" placeholder="ihre@email.de"
+             autocomplete="email"
+             onkeydown="if(event.key==='Enter')document.getElementById('pw1').focus()">
     </div>
 
     <div class="field">
-      <label>Passwort (Admin-Zugang)</label>
+      <label>Passwort</label>
       <input type="password" id="pw1" placeholder="Mindestens 8 Zeichen"
              autocomplete="new-password" oninput="checkStrength()"
              onkeydown="if(event.key==='Enter')document.getElementById('pw2').focus()">
@@ -172,65 +163,17 @@ body {
       <strong id="successEmail"></strong> geschickt.
     </div>
     <div class="success-url">
-      Ihre App-Adresse:<br>
-      <strong id="successUrl"></strong>
+      App-Adresse:<br>
+      <strong>ripelog.com/ernte-app.html</strong>
     </div>
     <div style="font-size:13px; color:var(--text-dim); line-height:1.6">
-      Nach der Bestätigung können Sie sich mit dem Benutzernamen <strong>admin</strong>
-      und Ihrem Passwort anmelden.
+      Nach der Bestätigung können Sie sich mit Ihrer E-Mail und Ihrem Passwort anmelden.
     </div>
   </div>
 </div>
 
 <script>
 const SB_EDGE = 'https://xbfhsnsyisvehmonyrxh.supabase.co/functions/v1/signup-betrieb';
-
-// Betriebsname → Subdomain-Vorschlag
-function toSubdomain(name) {
-  return name.toLowerCase()
-    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
-    .replace(/[^a-z0-9]+/g,'-')
-    .replace(/^-+|-+$/g,'')
-    .substring(0,30);
-}
-
-function onBetriebNameInput() {
-  const name = document.getElementById('betriebName').value.trim();
-  const sub   = document.getElementById('subdomainInput');
-  // Nur vorausfüllen wenn Subdomain noch leer oder automatisch generiert
-  if (!sub.dataset.manual) {
-    sub.value = toSubdomain(name);
-    validateSubdomain();
-  }
-}
-
-function onSubdomainInput() {
-  document.getElementById('subdomainInput').dataset.manual = '1';
-  validateSubdomain();
-}
-
-function validateSubdomain() {
-  const val   = document.getElementById('subdomainInput').value;
-  const wrap  = document.getElementById('subdomainWrap');
-  const hint  = document.getElementById('subdomainHint');
-  const box   = document.getElementById('previewBox');
-
-  if (!val) {
-    wrap.className = 'subdomain-wrap';
-    hint.className = 'hint dim'; hint.textContent = 'Kleinbuchstaben, Zahlen, Bindestriche';
-    box.style.display = 'none'; return;
-  }
-  if (!/^[a-z0-9-]{2,30}$/.test(val)) {
-    wrap.className = 'subdomain-wrap err';
-    hint.className = 'hint err'; hint.textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche (2–30 Zeichen)';
-    box.style.display = 'none'; return;
-  }
-  wrap.className = 'subdomain-wrap ok';
-  hint.className = 'hint ok'; hint.textContent = '✓ Verfügbar – wird beim Anlegen geprüft';
-  document.getElementById('previewUrl').textContent   = val + '.ripelog.com/ernte-app.html';
-  document.getElementById('previewLogin').textContent = 'admin@' + val + '.ripelog.com';
-  box.style.display = 'block';
-}
 
 function checkStrength() {
   const pw   = document.getElementById('pw1').value;
@@ -243,7 +186,7 @@ function checkStrength() {
 
 async function signup() {
   const betriebName = document.getElementById('betriebName').value.trim();
-  const subdomain   = document.getElementById('subdomainInput').value.trim();
+  const email       = document.getElementById('email').value.trim().toLowerCase();
   const pw1         = document.getElementById('pw1').value;
   const pw2         = document.getElementById('pw2').value;
   const msg         = document.getElementById('msg');
@@ -252,7 +195,7 @@ async function signup() {
   msg.className = 'msg';
 
   if (!betriebName) { msg.className='msg error'; msg.textContent='Bitte Betriebsname eingeben.'; return; }
-  if (!/^[a-z0-9-]{2,30}$/.test(subdomain)) { msg.className='msg error'; msg.textContent='Bitte gültige Adresse eingeben.'; return; }
+  if (!email || !email.includes('@')) { msg.className='msg error'; msg.textContent='Bitte gültige E-Mail eingeben.'; return; }
   if (pw1.length < 8) { msg.className='msg error'; msg.textContent='Passwort muss mindestens 8 Zeichen haben.'; return; }
   if (pw1 !== pw2)    { msg.className='msg error'; msg.textContent='Passwörter stimmen nicht überein.'; return; }
 
@@ -262,14 +205,12 @@ async function signup() {
     const res = await fetch(SB_EDGE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ betriebName, subdomain, email: `admin@${subdomain}.ripelog.com`, password: pw1 }),
+      body: JSON.stringify({ betriebName, email, password: pw1 }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Fehler ${res.status}`);
 
-    // Erfolg anzeigen
-    document.getElementById('successEmail').textContent = data.loginEmail;
-    document.getElementById('successUrl').textContent   = subdomain + '.ripelog.com';
+    document.getElementById('successEmail').textContent = email;
     document.getElementById('formSection').style.display  = 'none';
     document.getElementById('successSection').style.display = 'block';
 

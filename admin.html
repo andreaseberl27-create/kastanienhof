@@ -177,20 +177,36 @@ tbody tr:hover { background:#faf6ee; }
 @media print {
   body > * { display:none !important; }
   #printArea { display:block !important; }
-  @page { margin:8mm; size:A4; }
+  @page { margin:0; size:A4; }
+  .label-sheet { padding:0; gap:0 !important; }
 }
-.label-sheet { display:flex; flex-wrap:wrap; gap:4mm; align-content:flex-start; }
+.label-sheet { display:flex; flex-wrap:wrap; align-content:flex-start; }
+/* Basis-Label */
 .label {
-  width:70mm; height:38mm; border:0.5pt solid #aaa; border-radius:2mm;
-  display:flex; align-items:center; gap:3mm; padding:3mm;
-  font-family:Arial,sans-serif; page-break-inside:avoid; overflow:hidden;
+  border:0.5pt solid #aaa; border-radius:2mm;
+  display:flex; align-items:center;
+  font-family:Arial,sans-serif; page-break-inside:avoid; overflow:hidden; box-sizing:border-box;
 }
+/* Format A: 21 je Bogen – 70×42,3mm */
+.label.fmt-sm { width:70mm; height:42.3mm; gap:2mm; padding:2mm; }
+.label.fmt-sm .label-name { font-size:9pt; font-weight:bold; line-height:1.2; margin-bottom:1.5mm; word-break:break-word; }
+.label.fmt-sm .label-ma   { font-size:10pt; font-weight:bold; color:#333; }
+.label.fmt-sm .label-lfd  { font-size:8pt; color:#666; margin-top:1mm; }
+.label.fmt-sm .label-app  { font-size:6pt; color:#aaa; margin-top:1.5mm; }
+/* Format B: 12 je Bogen – 104×48mm */
+.label.fmt-lg { width:104mm; height:48mm; gap:3mm; padding:3mm; }
+.label.fmt-lg .label-name { font-size:11pt; font-weight:bold; line-height:1.2; margin-bottom:2mm; word-break:break-word; }
+.label.fmt-lg .label-ma   { font-size:12pt; font-weight:bold; color:#333; }
+.label.fmt-lg .label-lfd  { font-size:9pt; color:#666; margin-top:1mm; }
+.label.fmt-lg .label-app  { font-size:7pt; color:#aaa; margin-top:2mm; }
 .label-qr { flex-shrink:0; }
 .label-text { flex:1; min-width:0; }
-.label-name { font-size:10pt; font-weight:bold; line-height:1.2; margin-bottom:2mm; word-break:break-word; }
-.label-ma { font-size:11pt; font-weight:bold; color:#333; }
-.label-lfd { font-size:9pt; color:#666; margin-top:1mm; }
-.label-app { font-size:7pt; color:#aaa; margin-top:2mm; }
+/* Format-Auswahl im Modal */
+.qr-format-row { display:flex; gap:10px; margin-bottom:14px; }
+.qr-fmt-btn { flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px;
+  background:var(--bg); cursor:pointer; font-size:13px; text-align:center; transition:all .15s; }
+.qr-fmt-btn:hover { border-color:var(--primary); }
+.qr-fmt-btn.active { border-color:var(--primary); background:rgba(232,36,74,.07); color:var(--primary); font-weight:600; }
 
 /* ── Tooltips ── */
 [data-tip] { position:relative; }
@@ -308,8 +324,10 @@ tbody tr:hover { background:#faf6ee; }
 /* ── Label ohne Text (nur QR) ── */
 .label.qr-only { justify-content:center; }
 .label.qr-only .label-text { display:none; }
-.label.qr-only .label-qr canvas,
-.label.qr-only .label-qr img { width:30mm!important; height:30mm!important; }
+.label.fmt-sm.qr-only .label-qr canvas,
+.label.fmt-sm.qr-only .label-qr img { width:34mm!important; height:34mm!important; }
+.label.fmt-lg.qr-only .label-qr canvas,
+.label.fmt-lg.qr-only .label-qr img { width:42mm!important; height:42mm!important; }
 .badge-qual {
   display:inline-block; padding:1px 7px; border-radius:99px;
   font-size:11px; font-weight:700; font-family:monospace;
@@ -331,9 +349,9 @@ tbody tr:hover { background:#faf6ee; }
     <div class="login-title">Ripelog Admin</div>
     <div class="login-sub">Betriebsleiter-Bereich</div>
     <div class="form-group">
-      <label class="form-label">Benutzername</label>
-      <input class="form-input" id="loginUser" type="text" placeholder="name"
-        autocomplete="off" autocorrect="off" autocapitalize="off"
+      <label class="form-label">E-Mail</label>
+      <input class="form-input" id="loginUser" type="email" placeholder="ihre@email.de"
+        autocomplete="email" autocorrect="off" autocapitalize="off"
         onkeydown="if(event.key==='Enter')login()">
     </div>
     <div class="form-group">
@@ -387,6 +405,10 @@ tbody tr:hover { background:#faf6ee; }
         <div class="nav-item" id="nav-auswertung" onclick="navigate('auswertung')"
           data-tip="Ernte-Auswertungen · Kilo und Gebinde je Feld, Tag, Pflücker …">
           <span class="icon">📊</span> Auswertung
+        </div>
+        <div class="nav-item" id="nav-konfiguration" onclick="navigate('konfiguration')"
+          data-tip="Etikettenformat und weitere Betriebseinstellungen">
+          <span class="icon">⚙️</span> Konfiguration
         </div>
       </nav>
       <div class="sidebar-user">
@@ -472,24 +494,8 @@ tbody tr:hover { background:#faf6ee; }
   <div class="qr-modal-card">
     <div class="modal-title">🏷️ Etiketten drucken</div>
     <div id="qrEmployeeName" style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--primary)"></div>
-    <div class="qr-settings">
-      <div>
-        <label data-tip="Wie viele Aufkleber sollen gedruckt werden? (max. 200)">Anzahl Etiketten ℹ️</label>
-        <input class="form-input" id="qrCount" type="number" value="10" min="1" max="200"
-          oninput="updateQRPreview()">
-      </div>
-      <div>
-        <label data-tip="Wird automatisch als nächste freie Nummer ermittelt – nicht änderbar">Startnummer 🔒</label>
-        <input class="form-input" id="qrStart" type="number" value="1" min="1" readonly
-          style="background:#f8fafc;color:var(--dim);cursor:default">
-      </div>
-    </div>
-    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:6px">Inhalt des Etiketts</div>
-    <div class="qr-options">
-      <label><input type="checkbox" id="qrShowName" checked onchange="updateQRPreview()"> Mitarbeiter-Name</label>
-      <label><input type="checkbox" id="qrShowNr"   checked onchange="updateQRPreview()"> Mitarbeiter-Nr.</label>
-      <label><input type="checkbox" id="qrShowLfd"  checked onchange="updateQRPreview()"> Lfd. Nummer</label>
-    </div>
+
+    <div id="qrConfigHint" style="font-size:12px;color:var(--dim);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--border)"></div>
     <div style="font-size:12px;color:var(--dim);margin-bottom:8px"
       data-tip="Jedes Etikett enthält einen QR-Code der Form MA-Nr/lfd.Nr – beim Scannen in der App wird Doppelerfassung erkannt">
       Vorschau (erste 3) ℹ️:</div>
@@ -556,13 +562,13 @@ tbody tr:hover { background:#faf6ee; }
 // ── CONFIG ──────────────────────────────────────────────────
 const SB_URL    = 'https://xbfhsnsyisvehmonyrxh.supabase.co';
 const SB_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
-const SB_DOMAIN = '@kastanienhof.local';
 
 // ── STATE ────────────────────────────────────────────────────
 let session = null;
 let currentSection = 'mitarbeiter';
 let editId = null;
 let qrEmployee = null;
+let qrStartNr  = 1;
 let currentUserRole = null;
 let currentUserId = null;
 let currentBetriebId = null;
@@ -578,7 +584,8 @@ const SECTION_CONFIG = {
   qualitaeten:  { table:'qualitaeten',  label:'Qualitäten',   order:'sort_order' },
   gebinde:      { table:'gebinde',      label:'Gebinde',      order:'sort_order' },
   protokoll:    { table:'ernteeintraege', label:'Protokoll',  order:'datum', special:true },
-  auswertung:   { table:'ernteeintraege', label:'Auswertung', order:'datum', special:true }
+  auswertung:   { table:'ernteeintraege', label:'Auswertung', order:'datum', special:true },
+  konfiguration:   { table:null, label:'Konfiguration', order:null }
 };
 
 // ── SUPABASE HELPERS ─────────────────────────────────────────
@@ -614,15 +621,6 @@ async function sbDelete(table, id) {
 }
 
 // ── AUTH ─────────────────────────────────────────────────────
-function authDomain() {
-  // Auf ripelog.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.ripelog.com → @kastanienhof.ripelog.com)
-  const host = window.location.hostname;
-  if (host.endsWith('.ripelog.com')) {
-    const sub = host.split('.')[0];
-    return '@' + sub + '.ripelog.com';
-  }
-  return SB_DOMAIN.startsWith('@') ? SB_DOMAIN : '@' + SB_DOMAIN;
-}
 async function login() {
   const username = document.getElementById('loginUser').value.trim().toLowerCase();
   const password = document.getElementById('loginPass').value;
@@ -635,7 +633,7 @@ async function login() {
     const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: username + authDomain(), password })
+      body: JSON.stringify({ email: username, password })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || 'Anmeldung fehlgeschlagen');
@@ -726,6 +724,8 @@ async function navigate(section) {
     maFilter.classList.remove('hidden');
     document.getElementById('maSearch').value = '';
     document.getElementById('maFilterCount').textContent = '';
+  } else if (section === 'konfiguration') {
+    addBtn.style.display = 'none';
   } else {
     // Nur Admin darf neue Betriebsleiter anlegen
     addBtn.style.display = (section === 'betriebsleiter' && currentUserRole !== 'admin') ? 'none' : '';
@@ -734,6 +734,7 @@ async function navigate(section) {
 }
 
 async function loadSection(section) {
+  if (section === 'konfiguration') { renderKonfiguration(); return; }
   if (section === 'auswertung') { await loadAuswertung(); return; }
   if (section === 'protokoll')  { await initProtokoll();  return; }
   if (section === 'betriebsleiter') {
@@ -823,6 +824,66 @@ function filterMitarbeiter() {
   document.getElementById('tableContainer').innerHTML = renderMitarbeiter(filtered);
   const rowCount = document.getElementById('rowCount');
   if (rowCount) rowCount.textContent = ` · ${filtered.length} Einträge`;
+}
+
+function renderKonfiguration() {
+  const cfg = loadLabelConfig();
+  const el  = document.getElementById('tableContainer');
+  const rc  = document.getElementById('rowCount');
+  if (rc) rc.textContent = '';
+
+  el.innerHTML = `
+  <div style="max-width:540px;padding:8px 0">
+    <div style="font-size:15px;font-weight:700;margin-bottom:18px;color:var(--text)">🏷️ Etiketteneinstellungen</div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px">Format (Blatt-Einteilung)</div>
+    <div class="qr-format-row" style="margin-bottom:20px">
+      <button id="cfgFmtSm" class="qr-fmt-btn${cfg.labelFormat !== 'lg' ? ' active' : ''}"
+        onclick="setCfgFormat('sm')">
+        <div style="font-size:15px;margin-bottom:3px">21 je Bogen</div>
+        <div style="font-size:11px;color:var(--dim)">70 × 42 mm</div>
+      </button>
+      <button id="cfgFmtLg" class="qr-fmt-btn${cfg.labelFormat === 'lg' ? ' active' : ''}"
+        onclick="setCfgFormat('lg')">
+        <div style="font-size:15px;margin-bottom:3px">12 je Bogen</div>
+        <div style="font-size:11px;color:var(--dim)">104 × 48 mm</div>
+      </button>
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px">Inhalt des Etiketts</div>
+    <div class="qr-options" style="margin-bottom:20px">
+      <label><input type="checkbox" id="cfgShowName" ${cfg.showName ? 'checked' : ''} onchange="saveCfgOpts()"> Mitarbeiter-Name</label>
+      <label><input type="checkbox" id="cfgShowNr"   ${cfg.showNr   ? 'checked' : ''} onchange="saveCfgOpts()"> Mitarbeiter-Nr.</label>
+      <label><input type="checkbox" id="cfgShowLfd"  ${cfg.showLfd  ? 'checked' : ''} onchange="saveCfgOpts()"> Lfd. Nummer</label>
+    </div>
+
+    <div id="cfgSaved" style="font-size:12px;color:var(--green);opacity:0;transition:opacity .4s">✓ Gespeichert</div>
+  </div>`;
+}
+
+function setCfgFormat(fmt) {
+  const cfg = loadLabelConfig();
+  cfg.labelFormat = fmt;
+  saveLabelConfig(cfg);
+  document.getElementById('cfgFmtSm').classList.toggle('active', fmt === 'sm');
+  document.getElementById('cfgFmtLg').classList.toggle('active', fmt === 'lg');
+  flashCfgSaved();
+}
+
+function saveCfgOpts() {
+  const cfg = loadLabelConfig();
+  cfg.showName = document.getElementById('cfgShowName').checked;
+  cfg.showNr   = document.getElementById('cfgShowNr').checked;
+  cfg.showLfd  = document.getElementById('cfgShowLfd').checked;
+  saveLabelConfig(cfg);
+  flashCfgSaved();
+}
+
+function flashCfgSaved() {
+  const el = document.getElementById('cfgSaved');
+  if (!el) return;
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 1500);
 }
 
 function renderBetriebsleiter(data) {
@@ -964,12 +1025,9 @@ function getFormHTML(section, r) {
 
   switch(section) {
     case 'betriebsleiter': return `<div class="modal-grid">
-      <div class="full"><label class="form-label">Benutzername *</label>
-        <div style="display:flex;align-items:center;gap:4px">
-          <input class="form-input" id="f_username" placeholder="z.B. maria" style="flex:1"
-            autocomplete="off" autocorrect="off" autocapitalize="off">
-          <span style="font-size:13px;color:var(--dim);white-space:nowrap">${SB_DOMAIN}</span>
-        </div></div>
+      <div class="full"><label class="form-label">E-Mail *</label>
+        <input class="form-input" id="f_username" type="email" placeholder="mitarbeiter@email.de"
+          autocomplete="off" autocorrect="off" autocapitalize="off"></div>
       <div class="full"><label class="form-label">Passwort *</label>
         <input class="form-input" id="f_password" type="password" placeholder="Mindestens 6 Zeichen"
           autocomplete="new-password"></div>
@@ -1156,7 +1214,7 @@ async function saveBetriebsleiter() {
     const res = await fetch(`${SB_URL}/auth/v1/signup`, {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: username + authDomain(), password })
+      body: JSON.stringify({ email: username, password })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || 'Anlegen fehlgeschlagen');
@@ -1207,17 +1265,23 @@ async function openQR(id) {
   if (!qrEmployee) return;
   document.getElementById('qrEmployeeName').textContent =
     `${qrEmployee.name} · MA-${String(qrEmployee.mitarbeiter_nr).padStart(5,'0')}`;
-  document.getElementById('qrCount').value = 10;
-  document.getElementById('qrStart').value = '…';
+  qrStartNr = 1;
   document.getElementById('qrOverlay').classList.remove('hidden');
   // Nächste lfd_nr automatisch ermitteln
   try {
     const rows = await sbGet('etiketten',
       `pfluecker_nr=eq.${qrEmployee.mitarbeiter_nr}&order=lfd_nr.desc&limit=1&select=lfd_nr`);
-    document.getElementById('qrStart').value = rows.length ? rows[0].lfd_nr + 1 : 1;
+    qrStartNr = rows.length ? rows[0].lfd_nr + 1 : 1;
   } catch {
-    document.getElementById('qrStart').value = 1;
+    qrStartNr = 1;
   }
+  // Konfig-Hinweis befüllen
+  const cfg = loadLabelConfig();
+  const fmtLabel = cfg.labelFormat === 'lg' ? '12 je Bogen · 104×48mm' : '21 je Bogen · 70×42mm';
+  const parts = [cfg.showName && 'Name', cfg.showNr && 'Nr.', cfg.showLfd && 'Lfd-Nr.'].filter(Boolean);
+  const inhalt = parts.length ? parts.join(', ') : 'Nur QR-Code';
+  document.getElementById('qrConfigHint').innerHTML =
+    `Format: <strong>${fmtLabel}</strong> · Inhalt: <strong>${inhalt}</strong> — <a href="#" onclick="closeQR();navigate('konfiguration');return false;" style="color:var(--primary)">Konfiguration ändern</a>`;
   updateQRPreview();
 }
 
@@ -1229,12 +1293,17 @@ function closeQR() {
 function qrContent(nr, lfd) { return `${String(nr).padStart(5,'0')}/${String(lfd).padStart(5,'0')}`; }
 function fmtNr(n, pad=5) { return String(n).padStart(pad, '0'); }
 
+function loadLabelConfig() {
+  const defaults = { labelFormat:'sm', showName:true, showNr:true, showLfd:true };
+  try { return Object.assign(defaults, JSON.parse(localStorage.getItem('harvio_label_cfg') || '{}')); }
+  catch { return defaults; }
+}
+function saveLabelConfig(cfg) {
+  localStorage.setItem('harvio_label_cfg', JSON.stringify(cfg));
+}
 function getLabelOpts() {
-  return {
-    showName: document.getElementById('qrShowName').checked,
-    showNr:   document.getElementById('qrShowNr').checked,
-    showLfd:  document.getElementById('qrShowLfd').checked,
-  };
+  const c = loadLabelConfig();
+  return { format: c.labelFormat || 'sm', showName: !!c.showName, showNr: !!c.showNr, showLfd: !!c.showLfd };
 }
 
 function buildLabelHTML(emp, lfdNr) {
@@ -1245,10 +1314,11 @@ function buildLabelHTML(emp, lfdNr) {
 
 function updateQRPreview() {
   if (!qrEmployee) return;
-  const count = Math.min(parseInt(document.getElementById('qrCount').value) || 1, 200);
-  const start = parseInt(document.getElementById('qrStart').value) || 1;
   const opts  = getLabelOpts();
+  const count = opts.format === 'lg' ? 12 : 21;
+  const start = qrStartNr;
   const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
+  const qrPreviewSize = opts.format === 'lg' ? 64 : 52;
   const preview = document.getElementById('qrPreview');
   preview.innerHTML = '';
   const shown = Math.min(count, 3);
@@ -1270,7 +1340,7 @@ function updateQRPreview() {
       card.appendChild(info);
     }
     preview.appendChild(card);
-    new QRCode(qrDiv, { text: qr, width: 56, height: 56, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(qrDiv, { text: qr, width: qrPreviewSize, height: qrPreviewSize, correctLevel: QRCode.CorrectLevel.M });
   }
   if (count > 3) {
     const more = document.createElement('div');
@@ -1282,8 +1352,9 @@ function updateQRPreview() {
 
 async function printLabels() {
   if (!qrEmployee) return;
-  const count = Math.min(parseInt(document.getElementById('qrCount').value) || 1, 200);
-  const start = parseInt(document.getElementById('qrStart').value) || 1;
+  const opts  = getLabelOpts();
+  const count = opts.format === 'lg' ? 12 : 21;
+  const start = qrStartNr;
 
   // Etiketten in DB anlegen (unique constraint verhindert Doppelungen)
   const rows = Array.from({ length: count }, (_, i) => ({
@@ -1303,14 +1374,14 @@ async function printLabels() {
 
   // Druckseite aufbauen
   const opts   = getLabelOpts();
-  const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
-  const qrSize = qrOnly ? 100 : 80;
+  const qrOnly  = !opts.showName && !opts.showNr && !opts.showLfd;
+  const qrSize  = qrOnly ? (opts.format === 'lg' ? 160 : 130) : (opts.format === 'lg' ? 120 : 90);
   const sheet  = document.getElementById('labelSheet');
   sheet.innerHTML = '';
   for (let i = 0; i < count; i++) {
     const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
     const label = document.createElement('div');
-    label.className = qrOnly ? 'label qr-only' : 'label';
+    label.className = `label fmt-${opts.format}${qrOnly ? ' qr-only' : ''}`;
     const qrDiv = document.createElement('div');
     qrDiv.className = 'label-qr';
     label.appendChild(qrDiv);

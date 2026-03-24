@@ -490,12 +490,10 @@
     <div class="login-title">Ripelog</div>
     <div class="login-sub">Felderfassung</div>
     <div class="login-field">
-      <label>Benutzername</label>
-      <input class="login-input" id="loginUsername" type="text" placeholder="z.B. anna"
-             autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false"
-             oninput="updateLoginHint()"
+      <label>E-Mail</label>
+      <input class="login-input" id="loginUsername" type="email" placeholder="ihre@email.de"
+             autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false"
              onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
-      <div id="loginHint" style="font-size:11px;color:var(--text-dim);margin-top:5px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
     </div>
     <div class="login-field">
       <label>Passwort</label>
@@ -743,9 +741,8 @@
 <script>
 // ── VORKONFIGURATION ─────────────────────────────────────────
 // Diese drei Werte einmalig eintragen → kein manuelles Einrichten auf jedem Gerät nötig
-const PRESET_URL    = 'https://xbfhsnsyisvehmonyrxh.supabase.co';
-const PRESET_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
-const PRESET_DOMAIN = '@kastanienhof.local';
+const PRESET_URL = 'https://xbfhsnsyisvehmonyrxh.supabase.co';
+const PRESET_KEY = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
 // ─────────────────────────────────────────────────────────────
 
 let BETRIEB_ID = localStorage.getItem('sb_betrieb_id') || null;
@@ -931,22 +928,6 @@ function showToast(msg,bg){const t=document.getElementById('toast');t.textConten
 
 // ── AUTH ──────────────────────────────────────────────────────
 
-function authDomain() {
-  // Auf ripelog.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.ripelog.com → @kastanienhof.ripelog.com)
-  const host = window.location.hostname;
-  if (host.endsWith('.ripelog.com')) {
-    const sub = host.split('.')[0];
-    return '@' + sub + '.ripelog.com';
-  }
-  const d = PRESET_DOMAIN || localStorage.getItem('sb_domain') || '@kastanienhof.local';
-  return d.startsWith('@') ? d : '@' + d;
-}
-
-function updateLoginHint() {
-  const name = document.getElementById('loginUsername')?.value.trim().toLowerCase() || 'benutzername';
-  const hint = document.getElementById('loginHint');
-  if (hint) hint.textContent = '→ ' + name + authDomain();
-}
 
 function getSession()      { try { return JSON.parse(localStorage.getItem('sb_session') || 'null'); } catch { return null; } }
 function setSession(s)     { localStorage.setItem('sb_session', JSON.stringify(s)); }
@@ -966,7 +947,7 @@ async function loginUser() {
     const res = await fetch(`${CONFIG.url}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': CONFIG.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: username + authDomain(), password })
+      body: JSON.stringify({ email: username, password })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || 'Anmeldung fehlgeschlagen');
