@@ -1373,15 +1373,15 @@ async function printLabels() {
   }
 
   // Druckseite aufbauen
-  const opts   = getLabelOpts();
-  const qrOnly  = !opts.showName && !opts.showNr && !opts.showLfd;
-  const qrSize  = qrOnly ? (opts.format === 'lg' ? 160 : 130) : (opts.format === 'lg' ? 120 : 90);
+  const opts2  = getLabelOpts();
+  const qrOnly  = !opts2.showName && !opts2.showNr && !opts2.showLfd;
+  const qrSize  = qrOnly ? (opts2.format === 'lg' ? 160 : 130) : (opts2.format === 'lg' ? 120 : 90);
   const sheet  = document.getElementById('labelSheet');
   sheet.innerHTML = '';
   for (let i = 0; i < count; i++) {
     const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
     const label = document.createElement('div');
-    label.className = `label fmt-${opts.format}${qrOnly ? ' qr-only' : ''}`;
+    label.className = `label fmt-${opts2.format}${qrOnly ? ' qr-only' : ''}`;
     const qrDiv = document.createElement('div');
     qrDiv.className = 'label-qr';
     label.appendChild(qrDiv);
@@ -1389,9 +1389,9 @@ async function printLabels() {
       const text = document.createElement('div');
       text.className = 'label-text';
       text.innerHTML = [
-        opts.showName ? `<div class="label-name">${esc(name)}</div>` : '',
-        opts.showNr   ? `<div class="label-ma">${ma}</div>` : '',
-        opts.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
+        opts2.showName ? `<div class="label-name">${esc(name)}</div>` : '',
+        opts2.showNr   ? `<div class="label-ma">${ma}</div>` : '',
+        opts2.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
         `<div class="label-app">Ripelog</div>`
       ].join('');
       label.appendChild(text);
