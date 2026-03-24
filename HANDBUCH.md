@@ -1,13 +1,13 @@
-# Harvio – Benutzerhandbuch
+# Ripelog – Benutzerhandbuch
 
 **Version:** aktuell
 **Zielgruppe:** Betriebsleiter und Erntehelfer ohne IT-Kenntnisse
 
 ---
 
-## Was ist Harvio?
+## Was ist Ripelog?
 
-Harvio ist eine digitale Lösung zur **Erfassung und Auswertung von Erntemengen** auf dem Hof. Jeder Pflücker scannt beim Abliefern eines vollen Gebindes (Korb, Steige) einen QR-Code auf seinem persönlichen Etikett – die App bucht den Eintrag sofort in die Datenbank. Am Ende des Tages oder der Woche sehen Sie auf einen Blick: wer hat wie viel geerntet, auf welchem Feld, in welchem Gebinde.
+Ripelog ist eine digitale Lösung zur **Erfassung und Auswertung von Erntemengen** auf dem Hof. Jeder Pflücker scannt beim Abliefern eines vollen Gebindes (Korb, Steige) einen QR-Code auf seinem persönlichen Etikett – die App bucht den Eintrag sofort in die Datenbank. Am Ende des Tages oder der Woche sehen Sie auf einen Blick: wer hat wie viel geerntet, auf welchem Feld, in welchem Gebinde.
 
 **Die Software besteht aus zwei Teilen:**
 

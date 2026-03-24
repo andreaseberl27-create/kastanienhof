@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ripelog · Kostenlos starten</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --dunkel: #f5f0e8;
+  --mittel: #ede8df;
+  --border: rgba(45,90,39,.18);
+  --text: #1a1a1a;
+  --text-dim: #7a6a55;
+  --rot: #e8244a;
+  --rot-dunkel: #c0392b;
+  --gruen: #2d5a27;
+  --gruen-hell: #4a8c42;
+  --accent: #2d5a27;
+  --shadow: 0 8px 32px rgba(0,0,0,.10);
+}
+body {
+  font-family:'Inter',sans-serif; background:var(--dunkel);
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:24px;
+}
+.card {
+  width:100%; max-width:420px; background:#fff;
+  border-radius:20px; padding:36px 32px; box-shadow:var(--shadow);
+}
+.logo { text-align:center; margin-bottom:8px; }
+.logo img { width:64px; height:64px; object-fit:contain; }
+.title { font-family:'Syne',sans-serif; font-size:23px; font-weight:800; text-align:center; margin-bottom:4px; }
+.sub { font-size:13px; color:var(--text-dim); text-align:center; margin-bottom:28px; line-height:1.5; }
+
+.field { margin-bottom:18px; }
+.field label {
+  font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  color:var(--text-dim); display:block; margin-bottom:7px;
+}
+.field input {
+  width:100%; background:var(--dunkel); border:1.5px solid var(--border);
+  border-radius:12px; padding:13px 14px; font-family:'Inter',sans-serif;
+  font-size:15px; color:var(--text); outline:none; transition:border-color .2s;
+}
+.field input:focus { border-color:var(--accent); }
+.field input.err { border-color:var(--rot); }
+.field input.ok { border-color:var(--gruen-hell); }
+
+.subdomain-wrap {
+  display:flex; align-items:center;
+  background:var(--dunkel); border:1.5px solid var(--border);
+  border-radius:12px; overflow:hidden; transition:border-color .2s;
+}
+.subdomain-wrap:focus-within { border-color:var(--accent); }
+.subdomain-wrap.err { border-color:var(--rot); }
+.subdomain-wrap.ok  { border-color:var(--gruen-hell); }
+.subdomain-wrap input {
+  border:none; background:transparent; border-radius:0;
+  flex:1; min-width:0; padding:13px 0 13px 14px;
+}
+.subdomain-wrap input:focus { border-color:transparent; }
+.subdomain-suffix {
+  padding:13px 14px; font-size:14px; color:var(--text-dim);
+  font-family:'Inter',sans-serif; white-space:nowrap; flex-shrink:0;
+  border-left:1px solid var(--border);
+}
+
+.hint { font-size:12px; margin-top:6px; }
+.hint.ok  { color:var(--gruen); }
+.hint.err { color:var(--rot-dunkel); }
+.hint.dim { color:var(--text-dim); }
+
+.preview-box {
+  background:rgba(45,90,39,.07); border:1px solid rgba(45,90,39,.2);
+  border-radius:10px; padding:10px 14px; margin-top:8px;
+  font-size:12px; color:var(--text-dim); display:none;
+}
+.preview-box strong { color:var(--gruen); font-family:'Inter',sans-serif; }
+
+.btn {
+  width:100%; padding:15px; border-radius:12px; border:none; margin-top:8px;
+  background:linear-gradient(135deg,var(--gruen),var(--gruen-hell));
+  color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:700;
+  cursor:pointer; transition:all .15s; box-shadow:0 6px 20px rgba(45,90,39,.3);
+}
+.btn:hover { opacity:.92; }
+.btn:disabled { opacity:.6; cursor:default; }
+.msg {
+  font-size:13px; text-align:center; padding:10px 14px; border-radius:10px;
+  margin:12px 0 4px; display:none;
+}
+.msg.error   { background:rgba(232,36,74,.08); color:var(--rot-dunkel); display:block; }
+.msg.success { background:rgba(45,90,39,.08); color:var(--gruen); display:block; }
+
+.divider { text-align:center; font-size:12px; color:var(--text-dim); margin:20px 0 16px; }
+.login-link { display:block; text-align:center; font-size:13px; color:var(--text-dim); }
+.login-link a { color:var(--accent); text-decoration:none; font-weight:600; }
+.login-link a:hover { text-decoration:underline; }
+
+/* Success screen */
+#successSection { text-align:center; padding:8px 0; }
+.success-icon { font-size:52px; margin-bottom:18px; }
+.success-title { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; margin-bottom:10px; }
+.success-text { font-size:14px; color:var(--text-dim); line-height:1.6; margin-bottom:24px; }
+.success-url {
+  background:var(--dunkel); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; font-size:14px; margin-bottom:20px; word-break:break-all;
+}
+.success-url strong { color:var(--gruen); font-family:'Inter',sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div id="formSection">
+    <div class="logo"><img src="logo.png" alt="Ripelog"></div>
+    <div class="title">Kostenlos starten</div>
+    <div class="sub">Ihren Betrieb in 2 Minuten einrichten.<br>Keine Kreditkarte erforderlich.</div>
+
+    <div class="field">
+      <label>Name des Betriebs</label>
+      <input type="text" id="betriebName" placeholder="z. B. Obsthof Mustermann"
+             autocomplete="organization" oninput="onBetriebNameInput()"
+             onkeydown="if(event.key==='Enter')document.getElementById('subdomainInput').focus()">
+    </div>
+
+    <div class="field">
+      <label>Ihre Adresse bei Ripelog</label>
+      <div class="subdomain-wrap" id="subdomainWrap">
+        <input type="text" id="subdomainInput" placeholder="meinbetrieb"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               oninput="onSubdomainInput()"
+               onkeydown="if(event.key==='Enter')document.getElementById('pw1').focus()">
+        <div class="subdomain-suffix">.ripelog.com</div>
+      </div>
+      <div class="hint dim" id="subdomainHint">Kleinbuchstaben, Zahlen, Bindestriche</div>
+      <div class="preview-box" id="previewBox">
+        App-Adresse: <strong id="previewUrl">–</strong><br>
+        Login: <strong id="previewLogin">–</strong>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Passwort (Admin-Zugang)</label>
+      <input type="password" id="pw1" placeholder="Mindestens 8 Zeichen"
+             autocomplete="new-password" oninput="checkStrength()"
+             onkeydown="if(event.key==='Enter')document.getElementById('pw2').focus()">
+      <div class="hint" id="strengthHint"></div>
+    </div>
+
+    <div class="field">
+      <label>Passwort bestätigen</label>
+      <input type="password" id="pw2" placeholder="Passwort wiederholen"
+             autocomplete="new-password"
+             onkeydown="if(event.key==='Enter')signup()">
+    </div>
+
+    <div class="msg" id="msg"></div>
+    <button class="btn" id="btn" onclick="signup()">Betrieb anlegen →</button>
+
+    <div class="login-link" style="margin-top:18px">Bereits registriert? <a href="#">Zum Login</a></div>
+  </div>
+
+  <div id="successSection" style="display:none">
+    <div class="success-icon">🌱</div>
+    <div class="success-title">Betrieb angelegt!</div>
+    <div class="success-text">
+      Bitte bestätigen Sie Ihre E-Mail-Adresse – wir haben eine Mail an
+      <strong id="successEmail"></strong> geschickt.
+    </div>
+    <div class="success-url">
+      Ihre App-Adresse:<br>
+      <strong id="successUrl"></strong>
+    </div>
+    <div style="font-size:13px; color:var(--text-dim); line-height:1.6">
+      Nach der Bestätigung können Sie sich mit dem Benutzernamen <strong>admin</strong>
+      und Ihrem Passwort anmelden.
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_EDGE = 'https://xbfhsnsyisvehmonyrxh.supabase.co/functions/v1/signup-betrieb';
+
+// Betriebsname → Subdomain-Vorschlag
+function toSubdomain(name) {
+  return name.toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'')
+    .substring(0,30);
+}
+
+function onBetriebNameInput() {
+  const name = document.getElementById('betriebName').value.trim();
+  const sub   = document.getElementById('subdomainInput');
+  // Nur vorausfüllen wenn Subdomain noch leer oder automatisch generiert
+  if (!sub.dataset.manual) {
+    sub.value = toSubdomain(name);
+    validateSubdomain();
+  }
+}
+
+function onSubdomainInput() {
+  document.getElementById('subdomainInput').dataset.manual = '1';
+  validateSubdomain();
+}
+
+function validateSubdomain() {
+  const val   = document.getElementById('subdomainInput').value;
+  const wrap  = document.getElementById('subdomainWrap');
+  const hint  = document.getElementById('subdomainHint');
+  const box   = document.getElementById('previewBox');
+
+  if (!val) {
+    wrap.className = 'subdomain-wrap';
+    hint.className = 'hint dim'; hint.textContent = 'Kleinbuchstaben, Zahlen, Bindestriche';
+    box.style.display = 'none'; return;
+  }
+  if (!/^[a-z0-9-]{2,30}$/.test(val)) {
+    wrap.className = 'subdomain-wrap err';
+    hint.className = 'hint err'; hint.textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche (2–30 Zeichen)';
+    box.style.display = 'none'; return;
+  }
+  wrap.className = 'subdomain-wrap ok';
+  hint.className = 'hint ok'; hint.textContent = '✓ Verfügbar – wird beim Anlegen geprüft';
+  document.getElementById('previewUrl').textContent   = val + '.ripelog.com/ernte-app.html';
+  document.getElementById('previewLogin').textContent = 'admin@' + val + '.ripelog.com';
+  box.style.display = 'block';
+}
+
+function checkStrength() {
+  const pw   = document.getElementById('pw1').value;
+  const hint = document.getElementById('strengthHint');
+  if (!pw) { hint.textContent = ''; return; }
+  if (pw.length < 8)  { hint.className = 'hint err'; hint.textContent = 'Zu kurz (mind. 8 Zeichen)'; }
+  else if (pw.length < 12) { hint.className = 'hint'; hint.style.color='#c87c00'; hint.textContent = 'Akzeptabel'; }
+  else { hint.className = 'hint ok'; hint.textContent = 'Sicheres Passwort ✓'; }
+}
+
+async function signup() {
+  const betriebName = document.getElementById('betriebName').value.trim();
+  const subdomain   = document.getElementById('subdomainInput').value.trim();
+  const pw1         = document.getElementById('pw1').value;
+  const pw2         = document.getElementById('pw2').value;
+  const msg         = document.getElementById('msg');
+  const btn         = document.getElementById('btn');
+
+  msg.className = 'msg';
+
+  if (!betriebName) { msg.className='msg error'; msg.textContent='Bitte Betriebsname eingeben.'; return; }
+  if (!/^[a-z0-9-]{2,30}$/.test(subdomain)) { msg.className='msg error'; msg.textContent='Bitte gültige Adresse eingeben.'; return; }
+  if (pw1.length < 8) { msg.className='msg error'; msg.textContent='Passwort muss mindestens 8 Zeichen haben.'; return; }
+  if (pw1 !== pw2)    { msg.className='msg error'; msg.textContent='Passwörter stimmen nicht überein.'; return; }
+
+  btn.textContent = 'Betrieb wird angelegt…'; btn.disabled = true;
+
+  try {
+    const res = await fetch(SB_EDGE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ betriebName, subdomain, email: `admin@${subdomain}.ripelog.com`, password: pw1 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Fehler ${res.status}`);
+
+    // Erfolg anzeigen
+    document.getElementById('successEmail').textContent = data.loginEmail;
+    document.getElementById('successUrl').textContent   = subdomain + '.ripelog.com';
+    document.getElementById('formSection').style.display  = 'none';
+    document.getElementById('successSection').style.display = 'block';
+
+  } catch(e) {
+    msg.className = 'msg error'; msg.textContent = e.message;
+    btn.textContent = 'Betrieb anlegen →'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
-  "name": "Harvio Ernte",
-  "short_name": "Harvio",
+  "name": "Ripelog Ernte",
+  "short_name": "Ripelog",
   "description": "Ernte-Erfassung per QR-Scan",
   "start_url": "./ernte-app.html",
   "scope": "./",

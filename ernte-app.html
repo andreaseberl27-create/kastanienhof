@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Harvio">
+<meta name="apple-mobile-web-app-title" content="Ripelog">
 <meta name="theme-color" content="#f5f0e8">
-<title>🍓 Harvio</title>
+<title>🍓 Ripelog</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="icon" href="logo.png">
@@ -486,8 +486,8 @@
 <!-- ══ LOGIN ══ -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
-    <div class="login-logo"><img src="logo.png" alt="Harvio"></div>
-    <div class="login-title">Harvio</div>
+    <div class="login-logo"><img src="logo.png" alt="Ripelog"></div>
+    <div class="login-title">Ripelog</div>
     <div class="login-sub">Felderfassung</div>
     <div class="login-field">
       <label>Benutzername</label>
@@ -932,11 +932,11 @@ function showToast(msg,bg){const t=document.getElementById('toast');t.textConten
 // ── AUTH ──────────────────────────────────────────────────────
 
 function authDomain() {
-  // Auf harvio.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.harvio.com → @kastanienhof.harvio.com)
+  // Auf ripelog.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.ripelog.com → @kastanienhof.ripelog.com)
   const host = window.location.hostname;
-  if (host.endsWith('.harvio.com')) {
+  if (host.endsWith('.ripelog.com')) {
     const sub = host.split('.')[0];
-    return '@' + sub + '.harvio.com';
+    return '@' + sub + '.ripelog.com';
   }
   const d = PRESET_DOMAIN || localStorage.getItem('sb_domain') || '@kastanienhof.local';
   return d.startsWith('@') ? d : '@' + d;

@@ -1,4 +1,4 @@
-# 🍓 Harvio – Projektkontext für VS Code
+# 🍓 Ripelog – Projektkontext für VS Code
 
 ## Was bisher gebaut wurde
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Harvio · Admin</title>
+<title>Ripelog · Admin</title>
 <link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -327,8 +327,8 @@ tbody tr:hover { background:#faf6ee; }
 <!-- ── Login ── -->
 <div id="loginPage">
   <div class="login-card">
-    <div class="login-logo"><img src="logo.png" alt="Harvio"></div>
-    <div class="login-title">Harvio Admin</div>
+    <div class="login-logo"><img src="logo.png" alt="Ripelog"></div>
+    <div class="login-title">Ripelog Admin</div>
     <div class="login-sub">Betriebsleiter-Bereich</div>
     <div class="form-group">
       <label class="form-label">Benutzername</label>
@@ -350,7 +350,7 @@ tbody tr:hover { background:#faf6ee; }
 <div id="appPage">
   <div class="app-layout">
     <aside>
-      <div class="sidebar-logo"><img src="logo.png" alt="Harvio">Harvio</div>
+      <div class="sidebar-logo"><img src="logo.png" alt="Ripelog">Ripelog</div>
       <nav class="sidebar-nav">
         <div class="nav-item active" id="nav-mitarbeiter" onclick="navigate('mitarbeiter')"
           data-tip="Pflücker verwalten · QR-Etiketten drucken">
@@ -615,11 +615,11 @@ async function sbDelete(table, id) {
 
 // ── AUTH ─────────────────────────────────────────────────────
 function authDomain() {
-  // Auf harvio.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.harvio.com → @kastanienhof.harvio.com)
+  // Auf ripelog.com: Subdomain automatisch als Domain verwenden (z.B. kastanienhof.ripelog.com → @kastanienhof.ripelog.com)
   const host = window.location.hostname;
-  if (host.endsWith('.harvio.com')) {
+  if (host.endsWith('.ripelog.com')) {
     const sub = host.split('.')[0];
-    return '@' + sub + '.harvio.com';
+    return '@' + sub + '.ripelog.com';
   }
   return SB_DOMAIN.startsWith('@') ? SB_DOMAIN : '@' + SB_DOMAIN;
 }
@@ -1321,7 +1321,7 @@ async function printLabels() {
         opts.showName ? `<div class="label-name">${esc(name)}</div>` : '',
         opts.showNr   ? `<div class="label-ma">${ma}</div>` : '',
         opts.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
-        `<div class="label-app">Harvio</div>`
+        `<div class="label-app">Ripelog</div>`
       ].join('');
       label.appendChild(text);
     }
