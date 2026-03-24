@@ -857,8 +857,54 @@ function renderKonfiguration() {
       <label><input type="checkbox" id="cfgShowLfd"  ${cfg.showLfd  ? 'checked' : ''} onchange="saveCfgOpts()"> Lfd. Nummer</label>
     </div>
 
+    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px">Vorschau</div>
+    <div id="cfgPreviewWrap" style="margin-bottom:20px;overflow:hidden"></div>
+
     <div id="cfgSaved" style="font-size:12px;color:var(--green);opacity:0;transition:opacity .4s">✓ Gespeichert</div>
   </div>`;
+  renderCfgPreview();
+}
+
+function renderCfgPreview() {
+  const wrap = document.getElementById('cfgPreviewWrap');
+  if (!wrap) return;
+  const opts   = getLabelOpts();
+  const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
+  const qrSize = opts.format === 'lg' ? 96 : 76;
+  // Musterdaten
+  const name = 'Max Mustermann', ma = 'MA-00001', lfd = '#00001';
+  const qrText = '00001/00001';
+  // Label-Element bauen
+  wrap.innerHTML = '';
+  const scaleWrap = document.createElement('div');
+  const scale = opts.format === 'lg' ? 1.6 : 1.8;
+  // Wir skalieren das label hoch, damit es auf Screen gut sichtbar ist
+  scaleWrap.style.cssText = `display:inline-block;transform:scale(${scale});transform-origin:top left;`;
+  const label = document.createElement('div');
+  label.className = `label fmt-${opts.format}${qrOnly ? ' qr-only' : ''}`;
+  const qrDiv = document.createElement('div');
+  qrDiv.className = 'label-qr';
+  label.appendChild(qrDiv);
+  if (!qrOnly) {
+    const text = document.createElement('div');
+    text.className = 'label-text';
+    text.innerHTML = [
+      opts.showName ? `<div class="label-name">${name}</div>` : '',
+      opts.showNr   ? `<div class="label-ma">${ma}</div>` : '',
+      opts.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
+      `<div class="label-app">Harvio</div>`
+    ].join('');
+    label.appendChild(text);
+  }
+  scaleWrap.appendChild(label);
+  // Äußerer Wrapper mit korrekter Höhe (kompensiert transform-scale)
+  const fmt = opts.format === 'lg';
+  const wMm = fmt ? 104 : 70, hMm = fmt ? 48 : 42.3;
+  const outer = document.createElement('div');
+  outer.style.cssText = `height:calc(${hMm}mm * ${scale});width:calc(${wMm}mm * ${scale});`;
+  outer.appendChild(scaleWrap);
+  wrap.appendChild(outer);
+  new QRCode(qrDiv, { text: qrText, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
 }
 
 function setCfgFormat(fmt) {
@@ -867,6 +913,7 @@ function setCfgFormat(fmt) {
   saveLabelConfig(cfg);
   document.getElementById('cfgFmtSm').classList.toggle('active', fmt === 'sm');
   document.getElementById('cfgFmtLg').classList.toggle('active', fmt === 'lg');
+  renderCfgPreview();
   flashCfgSaved();
 }
 
@@ -876,6 +923,7 @@ function saveCfgOpts() {
   cfg.showNr   = document.getElementById('cfgShowNr').checked;
   cfg.showLfd  = document.getElementById('cfgShowLfd').checked;
   saveLabelConfig(cfg);
+  renderCfgPreview();
   flashCfgSaved();
 }
 
