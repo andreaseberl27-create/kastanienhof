@@ -24,14 +24,11 @@ Beide Dateien werden einfach im Browser geöffnet – keine Installation nötig.
 
 Die App ist für den **Einsatz auf dem Feld** gedacht. Sie läuft auf jedem Smartphone oder Tablet im Browser.
 
-### Beim ersten Start: Einstellungen
+### Anmeldung
 
-Beim allerersten Öffnen auf einem neuen Gerät müssen einmalig die Zugangsdaten eingegeben werden (Tab **Einstellungen ⚙️**):
+Beim ersten Öffnen erscheint ein Login-Bildschirm. Geben Sie Ihre **E-Mail-Adresse** und Ihr Passwort ein. Die Verbindungsdaten zur Datenbank sind bereits eingebaut – kein manuelles Einrichten nötig.
 
-- **Supabase URL** und **API-Key** – diese Werte erhalten Sie vom Admin
-- Danach auf **Speichern** tippen
-
-Nach dem Speichern wird automatisch eine Verbindung zur Datenbank hergestellt und alle Stammdaten (Felder, Sorten, Pflücker, Gebinde) werden geladen.
+Nach erfolgreicher Anmeldung werden alle Stammdaten (Felder, Sorten, Pflücker, Gebinde) automatisch geladen.
 
 ---
 
@@ -56,9 +53,15 @@ Standardmäßig wird **1× Gebinde** pro Scan gebucht. Wenn ein Pflücker ein ha
 - Schaltflächen **1×**, **¾×**, **½×**, **¼×** – einfach antippen
 - Oder einen eigenen Wert in das Eingabefeld tippen
 
-#### Schritt 3 – QR-Code scannen
+#### Schritt 3a – QR-Code scannen
 
 Tippen Sie auf den großen **Scannen**-Button. Die Kamera öffnet sich. Halten Sie den QR-Code des Pflückers in den Rahmen. Bei erfolgreichem Scan erscheint kurz eine grüne Bestätigung mit dem Namen des Pflückers und dem gebuchten Gewicht.
+
+#### Schritt 3b – Manuelle Erfassung (ohne Etikett)
+
+Hat ein Pflücker kein Etikett dabei, tippen Sie auf den kleinen Button **"✋ Kein Etikett – manuell erfassen"** unterhalb des Scan-Buttons. Es öffnet sich eine Liste aller Pflücker. Pflücker antippen → **Gebinde erfassen** tippen. Der Eintrag wird wie ein normaler Scan gebucht.
+
+> Diese Option eignet sich als Notlösung, wenn ein Etikett fehlt oder beschädigt ist. Für die reguläre Arbeit ist der QR-Scan zu bevorzugen.
 
 > **Doppelerfassung:** Wird derselbe QR-Code innerhalb weniger Sekunden zweimal gescannt, erscheint eine Warnung. Der zweite Scan wird **nicht** gebucht.
 
@@ -94,7 +97,6 @@ Tagesauswertung auf einen Blick:
 
 ### Tab: Einstellungen ⚙️
 
-- Verbindungsdaten ändern (URL, API-Key)
 - **Stammdaten neu laden** – falls neue Pflücker oder Felder im Admin-Panel angelegt wurden, hier aktualisieren
 - **Verbindung testen** – prüft ob die Datenbank erreichbar ist
 - Synchronisierungsstatus (oben rechts):
@@ -115,7 +117,7 @@ Das Admin-Panel wird auf einem **PC oder Laptop** im Browser geöffnet. Hier wer
 
 ### Anmeldung
 
-Beim Öffnen erscheint ein Login-Fenster. Geben Sie Ihre E-Mail-Adresse und Ihr Passwort ein. Es gibt zwei Rollen:
+Beim Öffnen erscheint ein Login-Fenster. Geben Sie Ihre **E-Mail-Adresse** und Ihr Passwort ein. Es gibt zwei Rollen:
 
 | Rolle | Was darf ich? |
 |-------|---------------|
@@ -132,8 +134,10 @@ Nach der Anmeldung sehen Sie oben links Ihren Namen und Ihre Rolle. Mit dem Butt
 
 Hier werden alle **Erntehelfer** angelegt und verwaltet.
 
-- **Neu anlegen**: Name, Nummer und optional Domain eingeben → Speichern
-- **QR-Etikett drucken**: Klick auf das Drucker-Symbol neben dem Namen → QR-Code wird als PDF zum Ausdrucken erzeugt. Jeder Pflücker bekommt sein persönliches Etikett.
+Oberhalb der Liste befindet sich ein **Suchfeld**: Tippen Sie einen Namen oder eine MA-Nummer ein, um die Liste sofort zu filtern. Die Trefferzahl wird rechts neben dem Suchfeld angezeigt.
+
+- **Neu anlegen**: Name und Nummer eingeben → Speichern
+- **QR-Etikett drucken**: Klick auf das Drucker-Symbol neben dem Namen → Ein Dialog öffnet sich. Das Etikettenformat und der Inhalt werden aus der **Konfiguration** übernommen (siehe unten). Das System ermittelt automatisch die nächste freie Nummer und bereitet den Bogen zum Drucken vor.
 - **Deaktivieren**: Pflücker können deaktiviert werden, wenn sie nicht mehr im Betrieb sind – ihre Daten und Einträge bleiben erhalten
 - **Löschen**: Nur möglich wenn keine Ernteeinträge mit diesem Pflücker verknüpft sind
 
@@ -142,7 +146,7 @@ Hier werden alle **Erntehelfer** angelegt und verwaltet.
 Zugänge für weitere Personen, die das Admin-Panel nutzen sollen.
 
 - Nur der **Admin** kann Betriebsleiter anlegen und löschen
-- Beim Anlegen wird automatisch ein Einladungslink per E-Mail verschickt (Supabase Auth)
+- Beim Anlegen wird die **E-Mail-Adresse** und ein Passwort eingetragen. Die Person kann sich danach direkt mit diesen Zugangsdaten anmelden.
 
 #### Felder
 
@@ -204,6 +208,28 @@ Vollständige Liste aller **Ernteeinträge** aus der Datenbank.
 
 ---
 
+#### Konfiguration ⚙️
+
+Hier werden betriebsweite Einstellungen für den **Etikettendruck** festgelegt. Diese Einstellungen gelten für alle zukünftigen Druckvorgänge.
+
+**Etikettenformat (Blatt-Einteilung):**
+| Format | Größe | Etiketten je Bogen |
+|--------|-------|--------------------|
+| **Klein** (Standard) | 70 × 42 mm | 21 je A4-Bogen |
+| **Groß** | 104 × 48 mm | 12 je A4-Bogen |
+
+**Etiketteninhalt:**
+Über Checkboxen wählen Sie, welche Informationen auf dem Etikett erscheinen:
+- **Mitarbeiter-Name** – Vollständiger Name des Pflückers
+- **Mitarbeiter-Nr.** – Die fortlaufende MA-Nummer
+- **Lfd. Nummer** – Die laufende Etikett-Nummer
+
+Sind alle drei deaktiviert, wird **nur der QR-Code** gedruckt (maximale Größe).
+
+Eine **Live-Vorschau** zeigt sofort, wie das fertige Etikett aussehen wird. Änderungen werden automatisch gespeichert.
+
+---
+
 #### Auswertung
 
 Dashboard mit **Kennzahlen und Diagrammen** für den gewählten Zeitraum.
@@ -246,6 +272,12 @@ Im Admin-Panel unter **Felder** anlegen und aktivieren. Danach in der App unter 
 
 **Wie ändere ich mein Passwort?**
 Im Admin-Panel links unten auf **Passwort ändern** klicken.
+
+**Ich möchte das Etikettenformat ändern (z. B. auf größere Bögen).**
+Im Admin-Panel unter **Konfiguration** das gewünschte Format wählen. Die Änderung gilt ab dem nächsten Druckvorgang.
+
+**Ein Pflücker hat kein Etikett dabei – wie erfasse ich trotzdem?**
+In der Ernte-App auf den Button **"✋ Kein Etikett – manuell erfassen"** tippen, den Pflücker in der Liste auswählen und bestätigen.
 
 ---
 

@@ -254,7 +254,7 @@ footer {
     <p>Die App ist für den Einsatz auf dem Feld gedacht und läuft auf jedem Smartphone oder Tablet direkt im Browser – keine Installation nötig. Sie kann auch als App auf dem Homescreen gespeichert werden.</p>
 
     <h3>Anmelden</h3>
-    <p>Beim Öffnen der App erscheint direkt der Login-Bildschirm. Nur den <strong>Kurznamen</strong> eingeben (z. B. <code>anna</code>) – die Domain wird automatisch ergänzt. Passwort eingeben und anmelden. Keine weitere Einrichtung nötig.</p>
+    <p>Beim Öffnen der App erscheint direkt der Login-Bildschirm. <strong>E-Mail-Adresse</strong> und Passwort eingeben und anmelden. Keine weitere Einrichtung nötig.</p>
 
     <div class="info-box tip">
       <span class="info-box-icon">💡</span>
@@ -292,6 +292,13 @@ footer {
         <div class="step-body">
           <div class="step-title">QR-Code scannen</div>
           <div class="step-desc">Großen <strong>Scannen</strong>-Button tippen. Kamera öffnet sich. QR-Code des Pflückers in den Rahmen halten. Bei Erfolg: kurzer Piepton + grüne Bestätigung mit Pflückername. Bei Doppelscan: roter Warnton + Fehlermeldung.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-nr">3b</div>
+        <div class="step-body">
+          <div class="step-title">Manuell erfassen (ohne Etikett)</div>
+          <div class="step-desc">Kein QR-Etikett vorhanden? Den kleinen Button <strong>✋ Kein Etikett – manuell erfassen</strong> unterhalb des Scan-Buttons tippen. Pflücker aus der Liste auswählen und mit <strong>Gebinde erfassen</strong> bestätigen.</div>
         </div>
       </div>
     </div>
@@ -350,7 +357,7 @@ footer {
     <p>Das Admin-Panel wird auf einem PC oder Laptop im Browser geöffnet. Hier werden Stammdaten gepflegt, Auswertungen abgerufen und das Protokoll verwaltet.</p>
 
     <h3>Anmeldung</h3>
-    <p>Beim Öffnen erscheint ein Login-Fenster. Benutzername und Passwort eingeben. Es gibt zwei Rollen:</p>
+    <p>Beim Öffnen erscheint ein Login-Fenster. <strong>E-Mail-Adresse</strong> und Passwort eingeben. Es gibt zwei Rollen:</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Rolle</th><th>Berechtigungen</th></tr></thead>
@@ -371,14 +378,23 @@ footer {
     </div>
 
     <h3>👥 Mitarbeiter (Pflücker)</h3>
+    <p>Oberhalb der Liste befindet sich ein <strong>Suchfeld</strong> zum schnellen Filtern nach Name oder MA-Nummer.</p>
     <ul>
       <li><strong>Neu anlegen:</strong> Name und 5-stellige Mitarbeiternummer eingeben → Speichern</li>
-      <li><strong>QR-Etikett drucken:</strong> Drucker-Symbol neben dem Namen → QR-Codes als Druckdialog</li>
+      <li><strong>QR-Etikett drucken:</strong> Drucker-Symbol neben dem Namen → Ein Dialog zeigt das aktuelle Etikettenformat und den Inhalt aus der Konfiguration. Das System ermittelt automatisch die nächste freie Nummer und startet den Druckdialog.</li>
       <li><strong>Deaktivieren:</strong> Pflücker bleibt in der Datenbank, erscheint aber nicht mehr in der App</li>
     </ul>
 
     <h3>🔑 Betriebsleiter</h3>
-    <p>Zugänge für weitere Personen, die das Admin-Panel nutzen sollen. Nur der Admin kann Betriebsleiter anlegen und löschen.</p>
+    <p>Zugänge für weitere Personen, die das Admin-Panel nutzen sollen. Nur der Admin kann Betriebsleiter anlegen und löschen. Beim Anlegen werden <strong>E-Mail-Adresse</strong> und Passwort eingetragen.</p>
+
+    <h3>⚙️ Konfiguration</h3>
+    <p>Betriebsweite Einstellungen für den Etikettendruck:</p>
+    <ul>
+      <li><strong>Format:</strong> Klein (21 je A4-Bogen, 70×42 mm) oder Groß (12 je A4-Bogen, 104×48 mm)</li>
+      <li><strong>Inhalt:</strong> Auswahl per Checkbox – Mitarbeiter-Name, Mitarbeiter-Nr., Lfd. Nummer. Werden alle deaktiviert, erscheint nur der QR-Code.</li>
+    </ul>
+    <p>Eine Live-Vorschau zeigt das fertige Etikett. Änderungen werden automatisch gespeichert.</p>
 
     <h3>🗺️ Felder</h3>
     <p>Alle Feldstücke des Betriebs. Felder können aktiviert/deaktiviert werden – deaktivierte erscheinen nicht in der App.</p>
