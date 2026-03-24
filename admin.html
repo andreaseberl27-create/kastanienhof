@@ -291,6 +291,25 @@ tbody tr:hover { background:#faf6ee; }
 .proto-filter label { font-size:12px; font-weight:600; color:var(--dim); white-space:nowrap; }
 .proto-filter .form-input { width:auto; padding:7px 10px; font-size:13px; }
 .proto-filter select.form-input { min-width:120px; }
+/* ── Mitarbeiter-Suche ── */
+.ma-filter { background:var(--surface); border-radius:12px; box-shadow:var(--shadow);
+  padding:12px 18px; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+.ma-filter.hidden { display:none; }
+.ma-filter input { flex:1; max-width:320px; padding:7px 12px; border:1px solid var(--border);
+  border-radius:8px; font-size:14px; background:var(--bg); color:var(--text); outline:none; }
+.ma-filter input:focus { border-color:var(--primary); }
+.ma-filter-count { font-size:13px; color:var(--dim); margin-left:auto; }
+/* ── QR Checkbox-Optionen ── */
+.qr-options { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding:10px 12px;
+  background:var(--bg); border-radius:8px; border:1px solid var(--border); }
+.qr-options label { display:flex; align-items:center; gap:6px; font-size:13px;
+  cursor:pointer; user-select:none; color:var(--text); }
+.qr-options input[type=checkbox] { width:15px; height:15px; accent-color:var(--primary); cursor:pointer; }
+/* ── Label ohne Text (nur QR) ── */
+.label.qr-only { justify-content:center; }
+.label.qr-only .label-text { display:none; }
+.label.qr-only .label-qr canvas,
+.label.qr-only .label-qr img { width:30mm!important; height:30mm!important; }
 .badge-qual {
   display:inline-block; padding:1px 7px; border-radius:99px;
   font-size:11px; font-weight:700; font-family:monospace;
@@ -386,6 +405,13 @@ tbody tr:hover { background:#faf6ee; }
         <div class="page-title" id="pageTitle">Mitarbeiter</div>
         <button class="btn-add" id="addBtn" onclick="openAdd()" data-tip="Neuen Eintrag anlegen">+ Neu anlegen</button>
       </div>
+      <!-- Mitarbeiter-Suche (nur bei Mitarbeiter sichtbar) -->
+      <div class="ma-filter hidden" id="mitarbeiterFilter">
+        <span style="font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap">🔍 Suche</span>
+        <input type="search" id="maSearch" placeholder="Name oder MA-Nr. …" oninput="filterMitarbeiter()">
+        <span class="ma-filter-count" id="maFilterCount"></span>
+      </div>
+
       <!-- Protokoll-Filter (nur bei Protokoll sichtbar) -->
       <div class="proto-filter hidden" id="protokollFilter">
         <label>Von</label>
@@ -457,6 +483,12 @@ tbody tr:hover { background:#faf6ee; }
         <input class="form-input" id="qrStart" type="number" value="1" min="1" readonly
           style="background:#f8fafc;color:var(--dim);cursor:default">
       </div>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:6px">Inhalt des Etiketts</div>
+    <div class="qr-options">
+      <label><input type="checkbox" id="qrShowName" checked onchange="updateQRPreview()"> Mitarbeiter-Name</label>
+      <label><input type="checkbox" id="qrShowNr"   checked onchange="updateQRPreview()"> Mitarbeiter-Nr.</label>
+      <label><input type="checkbox" id="qrShowLfd"  checked onchange="updateQRPreview()"> Lfd. Nummer</label>
     </div>
     <div style="font-size:12px;color:var(--dim);margin-bottom:8px"
       data-tip="Jedes Etikett enthält einen QR-Code der Form MA-Nr/lfd.Nr – beim Scannen in der App wird Doppelerfassung erkannt">
@@ -675,10 +707,12 @@ async function navigate(section) {
   const addBtn        = document.getElementById('addBtn');
   const dashFilter    = document.getElementById('dashFilter');
   const protoFilter   = document.getElementById('protokollFilter');
+  const maFilter      = document.getElementById('mitarbeiterFilter');
   const tableCard     = document.getElementById('tableCard');
   // Filter-Leisten
   dashFilter.classList.add('hidden');
   protoFilter.classList.add('hidden');
+  maFilter.classList.add('hidden');
   tableCard.classList.remove('dash-mode');
   if (section === 'auswertung') {
     addBtn.style.display = 'none';
@@ -687,6 +721,11 @@ async function navigate(section) {
   } else if (section === 'protokoll') {
     addBtn.style.display = 'none';
     protoFilter.classList.remove('hidden');
+  } else if (section === 'mitarbeiter') {
+    addBtn.style.display = '';
+    maFilter.classList.remove('hidden');
+    document.getElementById('maSearch').value = '';
+    document.getElementById('maFilterCount').textContent = '';
   } else {
     // Nur Admin darf neue Betriebsleiter anlegen
     addBtn.style.display = (section === 'betriebsleiter' && currentUserRole !== 'admin') ? 'none' : '';
@@ -709,6 +748,10 @@ async function loadSection(section) {
   const cfg = SECTION_CONFIG[section];
   cache[section] = await sbGet(cfg.table, `order=${cfg.order}`);
   renderSection(section);
+  // Mitarbeiter: aktive Suche erneut anwenden (falls gerade editiert wurde)
+  if (section === 'mitarbeiter' && document.getElementById('maSearch')?.value) {
+    filterMitarbeiter();
+  }
 }
 
 // ── RENDER ───────────────────────────────────────────────────
@@ -765,6 +808,21 @@ function renderMitarbeiter(data) {
         </div></td>
       </tr>`).join('') : emptyRow()}</tbody>
   </table>`;
+}
+
+function filterMitarbeiter() {
+  const q = (document.getElementById('maSearch').value || '').toLowerCase().trim();
+  const all = cache.mitarbeiter;
+  const filtered = q
+    ? all.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        String(r.mitarbeiter_nr).includes(q))
+    : all;
+  const countEl = document.getElementById('maFilterCount');
+  countEl.textContent = q ? `${filtered.length} von ${all.length}` : '';
+  document.getElementById('tableContainer').innerHTML = renderMitarbeiter(filtered);
+  const rowCount = document.getElementById('rowCount');
+  if (rowCount) rowCount.textContent = ` · ${filtered.length} Einträge`;
 }
 
 function renderBetriebsleiter(data) {
@@ -1171,6 +1229,14 @@ function closeQR() {
 function qrContent(nr, lfd) { return `${String(nr).padStart(5,'0')}/${String(lfd).padStart(5,'0')}`; }
 function fmtNr(n, pad=5) { return String(n).padStart(pad, '0'); }
 
+function getLabelOpts() {
+  return {
+    showName: document.getElementById('qrShowName').checked,
+    showNr:   document.getElementById('qrShowNr').checked,
+    showLfd:  document.getElementById('qrShowLfd').checked,
+  };
+}
+
 function buildLabelHTML(emp, lfdNr) {
   const nr  = emp.mitarbeiter_nr;
   const qr  = qrContent(nr, lfdNr);
@@ -1181,6 +1247,8 @@ function updateQRPreview() {
   if (!qrEmployee) return;
   const count = Math.min(parseInt(document.getElementById('qrCount').value) || 1, 200);
   const start = parseInt(document.getElementById('qrStart').value) || 1;
+  const opts  = getLabelOpts();
+  const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
   const preview = document.getElementById('qrPreview');
   preview.innerHTML = '';
   const shown = Math.min(count, 3);
@@ -1190,10 +1258,17 @@ function updateQRPreview() {
     card.className = 'qr-preview-label';
     const qrDiv = document.createElement('div');
     card.appendChild(qrDiv);
-    const info = document.createElement('div');
-    info.className = 'qr-preview-info';
-    info.innerHTML = `<div class="name">${esc(name)}</div><div class="nr">${ma} · ${lfd}</div>`;
-    card.appendChild(info);
+    if (!qrOnly) {
+      const info = document.createElement('div');
+      info.className = 'qr-preview-info';
+      info.innerHTML = [
+        opts.showName ? `<div class="name">${esc(name)}</div>` : '',
+        (opts.showNr || opts.showLfd)
+          ? `<div class="nr">${[opts.showNr ? ma : '', opts.showLfd ? lfd : ''].filter(Boolean).join(' · ')}</div>`
+          : ''
+      ].join('');
+      card.appendChild(info);
+    }
     preview.appendChild(card);
     new QRCode(qrDiv, { text: qr, width: 56, height: 56, correctLevel: QRCode.CorrectLevel.M });
   }
@@ -1227,24 +1302,31 @@ async function printLabels() {
   }
 
   // Druckseite aufbauen
-  const sheet = document.getElementById('labelSheet');
+  const opts   = getLabelOpts();
+  const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
+  const qrSize = qrOnly ? 100 : 80;
+  const sheet  = document.getElementById('labelSheet');
   sheet.innerHTML = '';
   for (let i = 0; i < count; i++) {
     const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
     const label = document.createElement('div');
-    label.className = 'label';
+    label.className = qrOnly ? 'label qr-only' : 'label';
     const qrDiv = document.createElement('div');
     qrDiv.className = 'label-qr';
     label.appendChild(qrDiv);
-    const text = document.createElement('div');
-    text.className = 'label-text';
-    text.innerHTML = `<div class="label-name">${esc(name)}</div>
-      <div class="label-ma">${ma}</div>
-      <div class="label-lfd">Etik. ${lfd}</div>
-      <div class="label-app">Harvio</div>`;
-    label.appendChild(text);
+    if (!qrOnly) {
+      const text = document.createElement('div');
+      text.className = 'label-text';
+      text.innerHTML = [
+        opts.showName ? `<div class="label-name">${esc(name)}</div>` : '',
+        opts.showNr   ? `<div class="label-ma">${ma}</div>` : '',
+        opts.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
+        `<div class="label-app">Harvio</div>`
+      ].join('');
+      label.appendChild(text);
+    }
     sheet.appendChild(label);
-    new QRCode(qrDiv, { text: qr, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(qrDiv, { text: qr, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
   }
   closeQR();
   setTimeout(() => window.print(), 400);

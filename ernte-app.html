@@ -556,6 +556,9 @@
       <span class="hero-sub" id="heroSub">Schicht einrichten ↑</span>
     </button>
   </div>
+  <div style="text-align:center;margin:-2px 0 6px">
+    <button onclick="openManualEntry()" style="background:none;border:none;font-size:12px;color:var(--text-dim);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px 8px;">✋ Kein Etikett – manuell erfassen</button>
+  </div>
 
   <!-- Menge (exception: partial Gebinde) -->
   <div class="menge-strip">
@@ -694,6 +697,23 @@
 </div>
 
 <!-- Setup Bottom Sheet -->
+<!-- ══ MANUELLE ERFASSUNG ══ -->
+<div class="setup-overlay hidden" id="manualOverlay" onclick="if(event.target===this)closeManualEntry()">
+  <div class="setup-sheet">
+    <div class="setup-sheet-title">
+      <span>✋ Manuelle Erfassung</span>
+      <button class="setup-close" onclick="closeManualEntry()">✕</button>
+    </div>
+    <div class="setup-section">
+      <div class="sublabel">Mitarbeiter wählen</div>
+      <div class="chip-wrap" id="manualPflückerList"></div>
+    </div>
+    <div style="margin-top:16px">
+      <button class="sett-btn primary" id="manualConfirmBtn" onclick="confirmManualEntry()" disabled style="opacity:.4">✅ Gebinde erfassen</button>
+    </div>
+  </div>
+</div>
+
 <div class="setup-overlay hidden" id="setupOverlay" onclick="if(event.target===this)closeSetup()">
   <div class="setup-sheet">
     <div class="setup-sheet-title">
@@ -1596,6 +1616,99 @@ async function addEntryFromScan(pickerName) {
 function startScanOrWarn() {
   if (!SCHICHT.feld || !SCHICHT.gebinde) { openSetup(); return; }
   openScan();
+}
+
+// ── MANUELLE ERFASSUNG ────────────────────────────────────────
+let manualSelectedPicker = null;
+
+function openManualEntry() {
+  if (!SCHICHT.feld || !SCHICHT.gebinde) { openSetup(); return; }
+  manualSelectedPicker = null;
+  const btn = document.getElementById('manualConfirmBtn');
+  btn.disabled = true; btn.style.opacity = '.4';
+  renderManualPflückerList();
+  document.getElementById('manualOverlay').classList.remove('hidden');
+}
+
+function closeManualEntry() {
+  document.getElementById('manualOverlay').classList.add('hidden');
+  manualSelectedPicker = null;
+}
+
+function renderManualPflückerList() {
+  const el = document.getElementById('manualPflückerList');
+  if (!el) return;
+  el.innerHTML = PFLÜCKER.map(name => {
+    const safe = name.replace(/'/g, '&#39;');
+    const active = manualSelectedPicker === name ? 'active-green' : '';
+    return `<div class="chip ${active}" onclick="selectManualPicker('${safe}')">${name}</div>`;
+  }).join('');
+}
+
+function selectManualPicker(name) {
+  manualSelectedPicker = name;
+  const btn = document.getElementById('manualConfirmBtn');
+  btn.disabled = false; btn.style.opacity = '1';
+  renderManualPflückerList();
+}
+
+async function confirmManualEntry() {
+  if (!manualSelectedPicker) return;
+  const pickerName = manualSelectedPicker;
+  const pflObj = PFLÜCKER_DATA.find(p => p.name === pickerName);
+  if (!pflObj?.mitarbeiter_nr) {
+    showToast('⚠️ Mitarbeiter hat keine Nummer – bitte im Admin-Panel prüfen', 'var(--braun)');
+    return;
+  }
+  closeManualEntry();
+
+  // Offline-Fallback: kein Etikett-Eintrag, nur Erfassung
+  if (!CONFIG.url || !CONFIG.key || !navigator.onLine) {
+    state._etikettenId = null;
+    await addEntryFromScan(pickerName);
+    playBeep(); showScanSuccess(pickerName); return;
+  }
+
+  try {
+    // Nächste lfd_nr für diesen Pflücker ermitteln
+    const maxRes = await fetch(
+      `${CONFIG.url}/rest/v1/etiketten?pfluecker_nr=eq.${pflObj.mitarbeiter_nr}&order=lfd_nr.desc&limit=1&select=lfd_nr`,
+      { headers: sbHeaders() }
+    );
+    if (!maxRes.ok) throw new Error(`HTTP ${maxRes.status}`);
+    const maxRows = await maxRes.json();
+    const nextLfd = maxRows.length ? maxRows[0].lfd_nr + 1 : 1;
+
+    // Neues Etikett direkt als gescannt anlegen
+    const insRes = await fetch(`${CONFIG.url}/rest/v1/etiketten`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({
+        pfluecker_nr: pflObj.mitarbeiter_nr,
+        lfd_nr: nextLfd,
+        gescannt_am: new Date().toISOString()
+      })
+    });
+    if (!insRes.ok) throw new Error(`HTTP ${insRes.status}`);
+    const inserted = await insRes.json();
+    const newEtikettenId = inserted[0]?.id ?? null;
+
+    state._etikettenId = newEtikettenId;
+    await addEntryFromScan(pickerName);
+
+    // eintrag_id zurückschreiben (fire & forget)
+    if (newEtikettenId && entries[0]?.id) {
+      fetch(`${CONFIG.url}/rest/v1/etiketten?id=eq.${newEtikettenId}`, {
+        method: 'PATCH',
+        headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ eintrag_id: entries[0].id })
+      }).catch(() => {});
+    }
+
+    playBeep(); showScanSuccess(pickerName);
+  } catch(e) {
+    showToast('❌ Fehler: ' + e.message, 'var(--rot-dunkel)');
+  }
 }
 
 function selectMenge(m, btn) {
