@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       email,
       password,
       options: {
-        emailRedirectTo: 'https://ripelog.com/ernte-app.html',
+        emailRedirectTo: 'https://ripelog.com/admin.html',
         data: { betrieb_name: betriebName },
       },
     });
