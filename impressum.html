@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impressum · Ripelog</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#f5f0e8; --surface:#fff; --border:rgba(45,90,39,.15);
+  --text:#1a1a1a; --dim:#7a6a55; --gruen:#2d5a27; --shadow:0 2px 12px rgba(0,0,0,.07);
+}
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+nav {
+  position:sticky; top:0; z-index:50;
+  background:rgba(255,255,255,.92); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border); box-shadow:var(--shadow);
+}
+.nav-inner {
+  max-width:1000px; margin:0 auto; padding:14px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.nav-logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.nav-logo img { width:32px; height:32px; object-fit:contain; }
+.nav-logo span { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:var(--text); }
+.back-link {
+  font-size:13px; font-weight:600; color:var(--dim); text-decoration:none;
+  padding:7px 14px; border-radius:8px; transition:all .15s;
+}
+.back-link:hover { background:var(--bg); color:var(--text); }
+
+.content { max-width:680px; margin:0 auto; padding:56px 24px 80px; }
+h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; margin-bottom:32px; }
+h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; margin:28px 0 6px; color:var(--gruen); }
+p, address { font-size:15px; color:#333; font-style:normal; margin-bottom:8px; }
+a { color:var(--gruen); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.box {
+  background:rgba(45,90,39,.06); border:1px solid rgba(45,90,39,.15);
+  border-radius:12px; padding:20px 24px; margin:12px 0 24px;
+}
+footer {
+  background:var(--surface); border-top:1px solid var(--border);
+  padding:20px 24px; text-align:center; font-size:12px; color:var(--dim);
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">
+      <img src="logo.png" alt="Ripelog">
+      <span>Ripelog</span>
+    </a>
+    <a class="back-link" href="index.html">← Zurück zur Startseite</a>
+  </div>
+</nav>
+
+<div class="content">
+  <h1>Impressum</h1>
+
+  <h2>Angaben gemäß § 5 TMG</h2>
+  <div class="box">
+    <address>
+      <strong>Andreas Eberl</strong><br>
+      Guttenbrunnstraße 12<br>
+      85256 Vierkirchen<br>
+      Deutschland
+    </address>
+  </div>
+
+  <h2>Kontakt</h2>
+  <p>E-Mail: <a href="mailto:kontakt@ripelog.com">kontakt@ripelog.com</a></p>
+  <p style="font-size:13px;color:var(--dim)">Wir antworten in der Regel innerhalb von 2 Werktagen.</p>
+
+  <h2>Umsatzsteuer-ID</h2>
+  <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG:<br>
+  <strong>folgt</strong></p>
+
+  <h2>Verantwortlich für den Inhalt</h2>
+  <p>Andreas Eberl<br>Adresse wie oben</p>
+
+  <h2>Streitschlichtung</h2>
+  <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+  <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a></p>
+  <p>Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+</div>
+
+<footer>
+  <p>© 2026 Ripelog ·
+    <a href="index.html">Startseite</a> ·
+    <a href="impressum.html">Impressum</a>
+  </p>
+</footer>
+
+</body>
+</html>

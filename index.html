@@ -163,6 +163,44 @@ nav {
 .access-btn.violet { background:#7c3aed; color:#fff; box-shadow:0 4px 14px rgba(124,58,237,.25); }
 .access-btn.violet:hover { background:#6d28d9; }
 
+/* ── Kontakt ── */
+.contact {
+  background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  padding:64px 24px;
+}
+.contact-inner {
+  max-width:640px; margin:0 auto;
+}
+.contact-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:32px;
+}
+@media (max-width:560px) { .contact-grid { grid-template-columns:1fr; } }
+.contact-grid .full { grid-column:1/-1; }
+.contact label {
+  display:block; font-size:11px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--dim); margin-bottom:6px;
+}
+.contact input, .contact textarea, .contact select {
+  width:100%; background:var(--bg); border:1.5px solid var(--border);
+  border-radius:10px; padding:12px 14px; font-family:'Inter',sans-serif;
+  font-size:14px; color:var(--text); outline:none; transition:border-color .2s;
+}
+.contact input:focus, .contact textarea:focus, .contact select:focus { border-color:var(--gruen); }
+.contact textarea { resize:vertical; min-height:110px; }
+.contact-btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:13px 28px; border-radius:10px; border:none; cursor:pointer;
+  font-family:'Syne',sans-serif; font-size:14px; font-weight:700;
+  background:linear-gradient(135deg,var(--gruen),var(--gruen-h)); color:#fff;
+  box-shadow:0 4px 16px rgba(45,90,39,.3); transition:all .15s; margin-top:4px;
+}
+.contact-btn:hover { opacity:.92; transform:translateY(-1px); }
+.contact-success {
+  display:none; background:rgba(45,90,39,.08); border:1px solid rgba(45,90,39,.2);
+  border-radius:12px; padding:20px 24px; text-align:center;
+  color:var(--gruen); font-weight:600; font-size:15px; margin-top:24px;
+}
+
 /* ── CTA banner ── */
 .cta {
   background:linear-gradient(135deg,var(--gruen),var(--gruen-h));
@@ -206,7 +244,7 @@ footer a:hover { color:var(--text); }
     </div>
     <div class="nav-links">
       <a class="nav-link" href="handbuch.html">Handbuch</a>
-      <a class="nav-link" href="admin.html">Admin-Panel</a>
+      <a class="nav-link" href="#kontakt">Kontakt</a>
       <a class="nav-btn" href="signup.html">Kostenlos starten</a>
     </div>
   </div>
@@ -324,6 +362,48 @@ footer a:hover { color:var(--text); }
   </div>
 </section>
 
+<!-- ── Kontakt ── -->
+<section class="contact" id="kontakt">
+  <div class="contact-inner">
+    <div class="section-label">Kontakt</div>
+    <div class="section-title">Interesse? Sprechen Sie uns an.</div>
+    <p style="font-size:15px;color:var(--dim);margin-top:-24px;margin-bottom:0">
+      Wir beraten Sie gerne – unverbindlich und kostenlos.
+    </p>
+    <form name="kontakt" method="POST" data-netlify="true" netlify-honeypot="bot-field"
+          onsubmit="handleContact(event)">
+      <input type="hidden" name="form-name" value="kontakt">
+      <p style="display:none"><input name="bot-field"></p>
+      <div class="contact-grid">
+        <div>
+          <label for="cf-name">Name</label>
+          <input type="text" id="cf-name" name="name" placeholder="Max Mustermann" required>
+        </div>
+        <div>
+          <label for="cf-betrieb">Betrieb</label>
+          <input type="text" id="cf-betrieb" name="betrieb" placeholder="Obsthof Mustermann">
+        </div>
+        <div>
+          <label for="cf-email">E-Mail</label>
+          <input type="email" id="cf-email" name="email" placeholder="ihre@email.de" required>
+        </div>
+        <div>
+          <label for="cf-tel">Telefon (optional)</label>
+          <input type="tel" id="cf-tel" name="telefon" placeholder="+49 123 456789">
+        </div>
+        <div class="full">
+          <label for="cf-msg">Nachricht</label>
+          <textarea id="cf-msg" name="nachricht" placeholder="Kurz beschreiben, was Sie interessiert…" required></textarea>
+        </div>
+      </div>
+      <button type="submit" class="contact-btn">Nachricht senden →</button>
+    </form>
+    <div class="contact-success" id="contactSuccess">
+      Vielen Dank! Wir melden uns in Kürze bei Ihnen.
+    </div>
+  </div>
+</section>
+
 <!-- ── CTA ── -->
 <section class="cta">
   <div class="cta-inner">
@@ -339,9 +419,29 @@ footer a:hover { color:var(--text); }
     <a href="ernte-app.html">Ernte-App</a> ·
     <a href="admin.html">Admin-Panel</a> ·
     <a href="handbuch.html">Handbuch</a> ·
-    <a href="signup.html">Registrieren</a>
+    <a href="signup.html">Registrieren</a> ·
+    <a href="impressum.html">Impressum</a>
   </p>
 </footer>
 
+<script>
+async function handleContact(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('.contact-btn');
+  btn.textContent = 'Wird gesendet…'; btn.disabled = true;
+  try {
+    await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(new FormData(form)).toString(),
+    });
+    form.style.display = 'none';
+    document.getElementById('contactSuccess').style.display = 'block';
+  } catch {
+    btn.textContent = 'Nachricht senden →'; btn.disabled = false;
+  }
+}
+</script>
 </body>
 </html>
