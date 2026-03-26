@@ -5,6 +5,61 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Seed-Daten für neue Betriebe
+async function seedDemoData(adminClient: ReturnType<typeof createClient>, betriebId: string) {
+  // 1. Fruchtarten
+  const { data: fruchtarten } = await adminClient.from('fruchtarten').insert([
+    { betrieb_id: betriebId, name: 'Äpfel',      emoji: '🍎', farbe: '#e74c3c', sort_order: 1, aktiv: true },
+    { betrieb_id: betriebId, name: 'Birnen',     emoji: '🍐', farbe: '#f39c12', sort_order: 2, aktiv: true },
+    { betrieb_id: betriebId, name: 'Kirschen',   emoji: '🍒', farbe: '#c0392b', sort_order: 3, aktiv: true },
+    { betrieb_id: betriebId, name: 'Erdbeeren',  emoji: '🍓', farbe: '#e91e8c', sort_order: 4, aktiv: true },
+  ]).select('id, name');
+
+  const aepfelId   = fruchtarten?.find(f => f.name === 'Äpfel')?.id;
+  const birnenId   = fruchtarten?.find(f => f.name === 'Birnen')?.id;
+  const kirschenId = fruchtarten?.find(f => f.name === 'Kirschen')?.id;
+
+  // 2. Sorten
+  await adminClient.from('sorten').insert([
+    { betrieb_id: betriebId, name: 'Elstar',      fruchtart_id: aepfelId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Gala',        fruchtart_id: aepfelId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Jonagold',    fruchtart_id: aepfelId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Boskoop',     fruchtart_id: aepfelId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Williams',    fruchtart_id: birnenId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Conference',  fruchtart_id: birnenId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Kordia',      fruchtart_id: kirschenId, aktiv: true },
+    { betrieb_id: betriebId, name: 'Regina',      fruchtart_id: kirschenId, aktiv: true },
+  ]);
+
+  // 3. Felder
+  await adminClient.from('felder').insert([
+    { betrieb_id: betriebId, name: 'Feld Nord',    fruchtart_id: aepfelId, aktiv: true },
+    { betrieb_id: betriebId, name: 'Feld Süd',     fruchtart_id: aepfelId, aktiv: true },
+    { betrieb_id: betriebId, name: 'Obstgarten',   fruchtart_id: birnenId, aktiv: true },
+  ]);
+
+  // 4. Qualitäten
+  await adminClient.from('qualitaeten').insert([
+    { betrieb_id: betriebId, code: 'K1',  label: 'Klasse I',   emoji: '⭐', sort_order: 1, aktiv: true },
+    { betrieb_id: betriebId, code: 'K2',  label: 'Klasse II',  emoji: '✅', sort_order: 2, aktiv: true },
+    { betrieb_id: betriebId, code: 'IND', label: 'Industrie',  emoji: '🏭', sort_order: 3, aktiv: true },
+  ]);
+
+  // 5. Gebinde
+  await adminClient.from('gebinde').insert([
+    { betrieb_id: betriebId, label: 'Steige 5 kg',         gewicht_kg: 5,   sort_order: 1, aktiv: true },
+    { betrieb_id: betriebId, label: 'Holzkiste 20 kg',     gewicht_kg: 20,  sort_order: 2, aktiv: true },
+    { betrieb_id: betriebId, label: 'Großbehälter 300 kg', gewicht_kg: 300, sort_order: 3, aktiv: true },
+  ]);
+
+  // 6. Pflücker
+  await adminClient.from('pfluecker').insert([
+    { betrieb_id: betriebId, vorname: 'Max',   nachname: 'Mustermann', mitarbeiter_nr: 1, aktiv: true },
+    { betrieb_id: betriebId, vorname: 'Anna',  nachname: 'Beispiel',   mitarbeiter_nr: 2, aktiv: true },
+    { betrieb_id: betriebId, vorname: 'Peter', nachname: 'Demo',       mitarbeiter_nr: 3, aktiv: true },
+  ]);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -23,19 +78,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Passwort muss mindestens 8 Zeichen haben.' }, { status: 400, headers: corsHeaders });
     }
 
-    // Anon-Client für Signup (löst Bestätigungsmail aus)
     const anonClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
     );
-
-    // Service-Role-Client für DB-Operationen
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // 1. Auth-User anlegen via signUp → sendet Bestätigungs-E-Mail
+    // 1. Auth-User anlegen (löst Bestätigungsmail aus)
     const { data: signUpData, error: signUpError } = await anonClient.auth.signUp({
       email,
       password,
@@ -74,12 +126,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: memberError.message }, { status: 500, headers: corsHeaders });
     }
 
+    // 4. Demo-Daten einfügen (Fehler hier nicht kritisch)
+    await seedDemoData(adminClient, betrieb.id);
+
     return Response.json({
       ok: true,
       message: 'Betrieb angelegt. Bitte E-Mail bestätigen.',
     }, { headers: corsHeaders });
 
-  } catch (err) {
-    return Response.json({ error: 'Interner Fehler: ' + err.message }, { status: 500, headers: corsHeaders });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return Response.json({ error: 'Interner Fehler: ' + msg }, { status: 500, headers: corsHeaders });
   }
 });

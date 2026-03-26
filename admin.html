@@ -721,7 +721,7 @@ async function navigate(section) {
   } else if (section === 'protokoll') {
     addBtn.style.display = 'none';
     protoFilter.classList.remove('hidden');
-  } else if (['mitarbeiter','felder','sorten','fruchtarten'].includes(section)) {
+  } else if (['mitarbeiter','felder','sorten','fruchtarten','qualitaeten','gebinde'].includes(section)) {
     addBtn.style.display = '';
     maFilter.classList.remove('hidden');
     document.getElementById('maSearch').value = '';
@@ -754,7 +754,7 @@ async function loadSection(section) {
   cache[section] = await sbGet(cfg.table, `order=${cfg.order}`);
   renderSection(section);
   // Aktive Suche erneut anwenden
-  if (['mitarbeiter','felder','sorten','fruchtarten'].includes(section) &&
+  if (['mitarbeiter','felder','sorten','fruchtarten','qualitaeten','gebinde'].includes(section) &&
       document.getElementById('maSearch')?.value) {
     filterList();
   }
@@ -806,7 +806,7 @@ function renderMitarbeiter(data) {
     <tbody>${data.length ? data.map(r => `
       <tr>
         <td>${nrBadge(r.mitarbeiter_nr)}</td>
-        <td style="font-weight:600">${esc(r.name)}${r.vorname||r.nachname ? `<div style="font-size:11px;color:var(--dim);font-weight:400">${[r.vorname,r.nachname].filter(Boolean).join(' ')}</div>` : ''}</td>
+        <td style="font-weight:600">${esc([r.vorname,r.nachname].filter(Boolean).join(' ') || r.name || '–')}</td>
         <td>${r.telefon ? esc(r.telefon) : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${r.externe_nr ? `<span style="font-family:monospace;font-size:12px">${esc(r.externe_nr)}</span>` : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${r.eintrittsdatum ? new Date(r.eintrittsdatum).toLocaleDateString('de-DE') : '<span style="color:var(--dim)">–</span>'}</td>
@@ -825,8 +825,14 @@ function filterList() {
   const all = cache[currentSection] || [];
   const filtered = q
     ? all.filter(r =>
-        (r.name||'').toLowerCase().includes(q) ||
-        (currentSection === 'mitarbeiter' && String(r.mitarbeiter_nr||'').includes(q)))
+        (r.name   || '').toLowerCase().includes(q) ||
+        (r.code   || '').toLowerCase().includes(q) ||
+        (r.label  || '').toLowerCase().includes(q) ||
+        (currentSection === 'mitarbeiter' && (
+          (r.vorname  || '').toLowerCase().includes(q) ||
+          (r.nachname || '').toLowerCase().includes(q) ||
+          String(r.mitarbeiter_nr || '').includes(q)
+        )))
     : all;
   const countEl = document.getElementById('maFilterCount');
   if (countEl) countEl.textContent = q ? `${filtered.length} von ${all.length}` : '';
@@ -903,7 +909,7 @@ function renderCfgPreview() {
       if (isName)  return `<div class="label-name">${esc(v)}</div>`;
       if (isSmall) return `<div class="label-lfd">${esc(v)}</div>`;
       return `<div class="label-ma">${esc(v)}</div>`;
-    }).filter(Boolean).join('') + `<div class="label-app">Harvio</div>`;
+    }).filter(Boolean).join('') + `<div class="label-app">${(document.getElementById('sidebarBetrieb')?.textContent||'').replace(/^🏡\s*/,'').trim()||'Harvio'}</div>`;
     label.appendChild(text);
   }
   scaleWrap.appendChild(label);
@@ -1132,15 +1138,13 @@ function getFormHTML(section, r) {
       </div>` : `<div class="full"><div class="modal-nr-hint" style="padding:8px;background:#f0fdf4;border-radius:6px;color:var(--green)">
         ✓ Mitarbeiter-Nr. wird automatisch vergeben.
       </div></div>`}
-      <div class="full"><label class="form-label">Name *</label>
-        <input class="form-input" id="f_name" value="${esc(v.name||'')}"></div>
       <div>
-        <label class="form-label">Vorname <span style="color:var(--dim);font-weight:400">(optional)</span></label>
-        <input class="form-input" id="f_vorname" type="text" placeholder="z.B. Max" value="${esc(r?.vorname||'')}">
+        <label class="form-label">Vorname</label>
+        <input class="form-input" id="f_vorname" type="text" placeholder="z.B. Max" value="${esc(r?.vorname||'')}" required>
       </div>
       <div>
-        <label class="form-label">Nachname <span style="color:var(--dim);font-weight:400">(optional)</span></label>
-        <input class="form-input" id="f_nachname" type="text" placeholder="z.B. Mustermann" value="${esc(r?.nachname||'')}">
+        <label class="form-label">Nachname</label>
+        <input class="form-input" id="f_nachname" type="text" placeholder="z.B. Mustermann" value="${esc(r?.nachname||'')}" required>
       </div>
       <div>
         <label class="form-label">Betriebliche MA-Nr. <span style="color:var(--dim);font-weight:400">(optional, Freitext)</span></label>
@@ -1241,9 +1245,9 @@ function getFieldVal(id, fallback=null) {
 function buildRecord(section) {
   switch(section) {
     case 'mitarbeiter': return {
-      name:           getFieldVal('f_name'),
-      vorname:        getFieldVal('f_vorname') || null,
-      nachname:       getFieldVal('f_nachname') || null,
+      vorname:        getFieldVal('f_vorname'),
+      nachname:       getFieldVal('f_nachname'),
+      name:           [getFieldVal('f_vorname'), getFieldVal('f_nachname')].filter(Boolean).join(' ') || null,
       externe_nr:     getFieldVal('f_externe_nr') || null,
       telefon:        getFieldVal('f_telefon'),
       eintrittsdatum: getFieldVal('f_eintrittsdatum'),
@@ -1288,6 +1292,12 @@ function buildRecord(section) {
 async function saveModal() {
   if (currentSection === 'betriebsleiter') {
     await saveBetriebsleiter(); return;
+  }
+  if (currentSection === 'mitarbeiter') {
+    if (!getFieldVal('f_vorname')?.trim() || !getFieldVal('f_nachname')?.trim()) {
+      alert('Vor- und Nachname sind Pflichtfelder.');
+      return;
+    }
   }
   const data = buildRecord(currentSection);
   if (!data.name && !data.label && !data.code) {
@@ -1533,7 +1543,7 @@ async function printLabels() {
         if (isName)  return `<div class="label-name">${esc(v)}</div>`;
         if (isSmall) return `<div class="label-lfd">${esc(v)}</div>`;
         return `<div class="label-ma">${esc(v)}</div>`;
-      }).filter(Boolean).join('') + `<div class="label-app">Harvio</div>`;
+      }).filter(Boolean).join('') + `<div class="label-app">${(document.getElementById('sidebarBetrieb')?.textContent||'').replace(/^🏡\s*/,'').trim()||'Harvio'}</div>`;
       label.appendChild(text);
     }
     sheet.appendChild(label);
@@ -1748,23 +1758,35 @@ async function deleteProtoEntry(id) {
 function exportProtoExcel() {
   if (!window.XLSX) { alert('Excel-Export nicht verfügbar.'); return; }
   if (!window._protokollData?.length) { alert('Keine Daten zum Exportieren.'); return; }
-  const rows = window._protokollData.map(r => ({
-    'Datum':      r.datum,
-    'Zeit':       (r.uhrzeit||'').slice(0,5),
-    'Pflücker':   r.pfluecker?.name || '',
-    'Feld':       r.feld?.name || '',
-    'Sorte':      r.sorte?.name || '',
-    'Gebinde':    r.gebinde?.label || '',
-    'Menge':      r.menge,
-    'Gewicht kg': r.menge && r.gebinde?.gewicht_kg ? +(r.menge * r.gebinde.gewicht_kg).toFixed(2) : 0,
-    'QR-Nr':      r.etiketten_id || '',
-  }));
+  const rows = window._protokollData.map(r => {
+    const pfl = r.pfluecker || {};
+    const vollname = [pfl.vorname, pfl.nachname].filter(Boolean).join(' ') || pfl.name || '';
+    const kg = r.menge && r.gebinde?.gewicht_kg ? +(r.menge * r.gebinde.gewicht_kg).toFixed(2) : 0;
+    return {
+      'Datum':            r.datum,
+      'Zeit':             (r.uhrzeit || '').slice(0, 5),
+      'Vorname':          pfl.vorname  || '',
+      'Nachname':         pfl.nachname || '',
+      'Name':             vollname,
+      'MA-Nr. (intern)':  pfl.mitarbeiter_nr ? `MA-${String(pfl.mitarbeiter_nr).padStart(5,'0')}` : '',
+      'Betriebl. MA-Nr.': pfl.externe_nr || '',
+      'Feld':             r.feld?.name  || '',
+      'Sorte':            r.sorte?.name || '',
+      'Gebinde':          r.gebinde?.label || '',
+      'Menge':            r.menge,
+      'Gewicht (kg)':     kg,
+      'QR-Nr':            r.etiketten_id || '',
+    };
+  });
   const ws = XLSX.utils.json_to_sheet(rows);
+  // Spaltenbreiten setzen
+  ws['!cols'] = [8,6,12,12,18,12,14,14,14,12,6,10,8].map(w=>({wch:w}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Protokoll');
-  const von  = document.getElementById('proto_von')?.value || '';
-  const bis  = document.getElementById('proto_bis')?.value || '';
-  XLSX.writeFile(wb, `Harvio_Protokoll${von?'_'+von:''}${bis&&bis!==von?'_'+bis:''}.xlsx`);
+  const von = document.getElementById('proto_von')?.value || '';
+  const bis = document.getElementById('proto_bis')?.value || '';
+  const betrieb = (document.getElementById('sidebarBetrieb')?.textContent || '').replace(/^🏡\s*/,'').trim() || 'Harvio';
+  XLSX.writeFile(wb, `${betrieb}_Protokoll${von ? '_'+von : ''}${bis && bis !== von ? '_'+bis : ''}.xlsx`);
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────

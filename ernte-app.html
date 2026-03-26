@@ -461,6 +461,23 @@
   .suc-name { display: block; font-size: 30px; font-weight: 800; }
   .suc-weight { display: block; font-size: 14px; color: rgba(255,255,255,.7); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
 
+  /* ── Segmented Filter Control ── */
+  .seg-control {
+    display: flex; background: rgba(0,0,0,.25); border-radius: 10px;
+    padding: 3px; gap: 2px; margin-bottom: 12px;
+  }
+  .seg-btn {
+    flex: 1; padding: 6px 4px; border: none; border-radius: 7px;
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--text-dim); background: none; cursor: pointer;
+    transition: all .15s; white-space: nowrap; text-align: center;
+  }
+  .seg-btn.active {
+    background: var(--dunkel); color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,.4);
+  }
+  .seg-btn:active { transform: scale(.95); }
+
   /* ── Setup Bottom Sheet ── */
   .setup-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 400;
@@ -1804,13 +1821,13 @@ function renderSetupSheet() {
 
   function feldFilterChips() {
     if (fruchtartenMitFeld.length < 2) return '';
-    return `
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-        <div class="chip${!setupFeldFilterId ? ' active-green' : ''}" style="font-size:12px;padding:4px 10px" onclick="setSetupFeldFilter(null)">Alle</div>
-        ${fruchtartenMitFeld.map(f => `
-          <div class="chip${setupFeldFilterId === f.id ? ' active-green' : ''}" style="font-size:12px;padding:4px 10px" onclick="setSetupFeldFilter(${f.id})">${f.emoji} ${f.name}</div>
-        `).join('')}
-      </div>`;
+    const btns = [
+      `<button class="seg-btn${!setupFeldFilterId ? ' active' : ''}" onclick="setSetupFeldFilter(null)">Alle</button>`,
+      ...fruchtartenMitFeld.map(f =>
+        `<button class="seg-btn${setupFeldFilterId === f.id ? ' active' : ''}" onclick="setSetupFeldFilter(${f.id})">${f.emoji} ${f.name}</button>`
+      )
+    ].join('');
+    return `<div class="seg-control">${btns}</div>`;
   }
 
   const canClose = SCHICHT.feld && SCHICHT.gebinde;
