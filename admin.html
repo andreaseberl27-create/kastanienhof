@@ -7,6 +7,7 @@
 <link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #f5f0e8; --surface: #fff; --border: rgba(45,90,39,.18);
@@ -430,7 +431,7 @@ tbody tr:hover { background:#faf6ee; }
       <!-- Mitarbeiter-Suche (nur bei Mitarbeiter sichtbar) -->
       <div class="ma-filter hidden" id="mitarbeiterFilter">
         <span style="font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap">🔍 Suche</span>
-        <input type="search" id="maSearch" placeholder="Name oder MA-Nr. …" oninput="filterMitarbeiter()">
+        <input type="search" id="maSearch" placeholder="Name oder MA-Nr. …" oninput="filterList()">
         <span class="ma-filter-count" id="maFilterCount"></span>
       </div>
 
@@ -453,6 +454,7 @@ tbody tr:hover { background:#faf6ee; }
           <button class="btn-quick active" onclick="setProtoRange('week')">Diese Woche</button>
           <button class="btn-quick" onclick="setProtoRange('month')">Dieser Monat</button>
           <button class="btn-quick" onclick="setProtoRange('all')">Gesamt</button>
+          <button class="btn-quick" onclick="exportProtoExcel()" style="margin-left:auto;background:var(--green);color:#fff;border-color:var(--green)">⬇ Excel</button>
         </div>
       </div>
 
@@ -719,11 +721,13 @@ async function navigate(section) {
   } else if (section === 'protokoll') {
     addBtn.style.display = 'none';
     protoFilter.classList.remove('hidden');
-  } else if (section === 'mitarbeiter') {
+  } else if (['mitarbeiter','felder','sorten','fruchtarten'].includes(section)) {
     addBtn.style.display = '';
     maFilter.classList.remove('hidden');
     document.getElementById('maSearch').value = '';
     document.getElementById('maFilterCount').textContent = '';
+    document.getElementById('maSearch').placeholder =
+      section === 'mitarbeiter' ? 'Name oder MA-Nr. …' : 'Name …';
   } else if (section === 'konfiguration') {
     addBtn.style.display = 'none';
   } else {
@@ -749,19 +753,15 @@ async function loadSection(section) {
   const cfg = SECTION_CONFIG[section];
   cache[section] = await sbGet(cfg.table, `order=${cfg.order}`);
   renderSection(section);
-  // Mitarbeiter: aktive Suche erneut anwenden (falls gerade editiert wurde)
-  if (section === 'mitarbeiter' && document.getElementById('maSearch')?.value) {
-    filterMitarbeiter();
+  // Aktive Suche erneut anwenden
+  if (['mitarbeiter','felder','sorten','fruchtarten'].includes(section) &&
+      document.getElementById('maSearch')?.value) {
+    filterList();
   }
 }
 
 // ── RENDER ───────────────────────────────────────────────────
-function renderSection(section) {
-  const data = cache[section];
-  const el = document.getElementById('tableContainer');
-  const countEl = document.getElementById('rowCount');
-  if (countEl) countEl.textContent = ` · ${data.length} Einträge`;
-
+function renderSection_html(section, data) {
   const renders = {
     mitarbeiter: renderMitarbeiter,
     betriebsleiter: renderBetriebsleiter,
@@ -771,7 +771,15 @@ function renderSection(section) {
     qualitaeten: renderQualitaeten,
     gebinde: renderGebinde
   };
-  el.innerHTML = renders[section](data);
+  return renders[section] ? renders[section](data) : '';
+}
+
+function renderSection(section) {
+  const data   = cache[section];
+  const el     = document.getElementById('tableContainer');
+  const countEl = document.getElementById('rowCount');
+  if (countEl) countEl.textContent = ` · ${data.length} Einträge`;
+  el.innerHTML = renderSection_html(section, data);
 }
 
 function emptyRow(msg='Noch keine Einträge') {
@@ -793,13 +801,14 @@ function nrBadge(nr) {
 function renderMitarbeiter(data) {
   return `<table>
     <thead><tr>
-      <th>Nr.</th><th>Name</th><th>Telefon</th><th>Eintrittsdatum</th><th>Status</th><th>Aktionen</th>
+      <th>Nr.</th><th>Name</th><th>Telefon</th><th>Betr. Nr.</th><th>Eintrittsdatum</th><th>Status</th><th>Aktionen</th>
     </tr></thead>
     <tbody>${data.length ? data.map(r => `
       <tr>
         <td>${nrBadge(r.mitarbeiter_nr)}</td>
-        <td style="font-weight:600">${esc(r.name)}</td>
+        <td style="font-weight:600">${esc(r.name)}${r.vorname||r.nachname ? `<div style="font-size:11px;color:var(--dim);font-weight:400">${[r.vorname,r.nachname].filter(Boolean).join(' ')}</div>` : ''}</td>
         <td>${r.telefon ? esc(r.telefon) : '<span style="color:var(--dim)">–</span>'}</td>
+        <td>${r.externe_nr ? `<span style="font-family:monospace;font-size:12px">${esc(r.externe_nr)}</span>` : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${r.eintrittsdatum ? new Date(r.eintrittsdatum).toLocaleDateString('de-DE') : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${statusBadge(r.aktiv)}</td>
         <td><div class="actions">
@@ -811,17 +820,17 @@ function renderMitarbeiter(data) {
   </table>`;
 }
 
-function filterMitarbeiter() {
+function filterList() {
   const q = (document.getElementById('maSearch').value || '').toLowerCase().trim();
-  const all = cache.mitarbeiter;
+  const all = cache[currentSection] || [];
   const filtered = q
     ? all.filter(r =>
-        r.name.toLowerCase().includes(q) ||
-        String(r.mitarbeiter_nr).includes(q))
+        (r.name||'').toLowerCase().includes(q) ||
+        (currentSection === 'mitarbeiter' && String(r.mitarbeiter_nr||'').includes(q)))
     : all;
   const countEl = document.getElementById('maFilterCount');
-  countEl.textContent = q ? `${filtered.length} von ${all.length}` : '';
-  document.getElementById('tableContainer').innerHTML = renderMitarbeiter(filtered);
+  if (countEl) countEl.textContent = q ? `${filtered.length} von ${all.length}` : '';
+  document.getElementById('tableContainer').innerHTML = renderSection_html(currentSection, filtered);
   const rowCount = document.getElementById('rowCount');
   if (rowCount) rowCount.textContent = ` · ${filtered.length} Einträge`;
 }
@@ -850,12 +859,9 @@ function renderKonfiguration() {
       </button>
     </div>
 
-    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px">Inhalt des Etiketts</div>
-    <div class="qr-options" style="margin-bottom:20px">
-      <label><input type="checkbox" id="cfgShowName" ${cfg.showName ? 'checked' : ''} onchange="saveCfgOpts()"> Mitarbeiter-Name</label>
-      <label><input type="checkbox" id="cfgShowNr"   ${cfg.showNr   ? 'checked' : ''} onchange="saveCfgOpts()"> Mitarbeiter-Nr.</label>
-      <label><input type="checkbox" id="cfgShowLfd"  ${cfg.showLfd  ? 'checked' : ''} onchange="saveCfgOpts()"> Lfd. Nummer</label>
-    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:4px">Inhalt des Etiketts <span style="font-weight:400">(max. 4 Felder)</span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:8px" id="cfgFieldsHint"></div>
+    <div class="qr-options" style="margin-bottom:20px" id="cfgFieldsList"></div>
 
     <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px">Vorschau</div>
     <div id="cfgPreviewWrap" style="margin-bottom:20px;overflow:hidden"></div>
@@ -863,16 +869,15 @@ function renderKonfiguration() {
     <div id="cfgSaved" style="font-size:12px;color:var(--green);opacity:0;transition:opacity .4s">✓ Gespeichert</div>
   </div>`;
   renderCfgPreview();
+  renderCfgFieldsList();
 }
 
 function renderCfgPreview() {
   const wrap = document.getElementById('cfgPreviewWrap');
   if (!wrap) return;
   const opts   = getLabelOpts();
-  const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
+  const qrOnly = opts.fields.length === 0;
   const qrSize = opts.format === 'lg' ? 96 : 76;
-  // Musterdaten
-  const name = 'Max Mustermann', ma = 'MA-00001', lfd = '#00001';
   const qrText = '00001/00001';
   // Label-Element bauen
   wrap.innerHTML = '';
@@ -888,12 +893,17 @@ function renderCfgPreview() {
   if (!qrOnly) {
     const text = document.createElement('div');
     text.className = 'label-text';
-    text.innerHTML = [
-      opts.showName ? `<div class="label-name">${name}</div>` : '',
-      opts.showNr   ? `<div class="label-ma">${ma}</div>` : '',
-      opts.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
-      `<div class="label-app">Harvio</div>`
-    ].join('');
+    const demoEmp = { name:'Max Mustermann', vorname:'Max', nachname:'Mustermann',
+                      mitarbeiter_nr:1, externe_nr:'2024-001' };
+    text.innerHTML = opts.fields.map(f => {
+      const v = getLabelFieldValue(demoEmp, 1, f);
+      if (!v) return '';
+      const isName = ['name','vorname','nachname'].includes(f);
+      const isSmall = ['lfd_nr','externe_nr'].includes(f);
+      if (isName)  return `<div class="label-name">${esc(v)}</div>`;
+      if (isSmall) return `<div class="label-lfd">${esc(v)}</div>`;
+      return `<div class="label-ma">${esc(v)}</div>`;
+    }).filter(Boolean).join('') + `<div class="label-app">Harvio</div>`;
     label.appendChild(text);
   }
   scaleWrap.appendChild(label);
@@ -917,12 +927,42 @@ function setCfgFormat(fmt) {
   flashCfgSaved();
 }
 
-function saveCfgOpts() {
-  const cfg = loadLabelConfig();
-  cfg.showName = document.getElementById('cfgShowName').checked;
-  cfg.showNr   = document.getElementById('cfgShowNr').checked;
-  cfg.showLfd  = document.getElementById('cfgShowLfd').checked;
+function renderCfgFieldsList() {
+  const cfg    = loadLabelConfig();
+  const fields = cfg.labelFields || [];
+  const el     = document.getElementById('cfgFieldsList');
+  const hint   = document.getElementById('cfgFieldsHint');
+  if (!el) return;
+  el.innerHTML = LABEL_FIELD_DEFS.map(f => `
+    <label>
+      <input type="checkbox" id="cfgField_${f.id}"
+        ${fields.includes(f.id) ? 'checked' : ''}
+        onchange="toggleCfgField('${f.id}')">
+      ${f.label}
+    </label>`).join('');
+  if (hint) hint.textContent = `${fields.length} von 4 ausgewählt`;
+}
+
+function toggleCfgField(field) {
+  const cfg    = loadLabelConfig();
+  const fields = cfg.labelFields || [];
+  const idx    = fields.indexOf(field);
+  if (idx >= 0) {
+    fields.splice(idx, 1);
+  } else {
+    if (fields.length >= 4) {
+      // Max erreicht – Checkbox rückgängig machen
+      const cb = document.getElementById('cfgField_' + field);
+      if (cb) cb.checked = false;
+      const hint = document.getElementById('cfgFieldsHint');
+      if (hint) { hint.textContent = '⚠️ Maximal 4 Felder möglich'; hint.style.color='var(--red)'; setTimeout(()=>{hint.style.color='';renderCfgFieldsList();},1800); }
+      return;
+    }
+    fields.push(field);
+  }
+  cfg.labelFields = fields;
   saveLabelConfig(cfg);
+  renderCfgFieldsList();
   renderCfgPreview();
   flashCfgSaved();
 }
@@ -1094,6 +1134,18 @@ function getFormHTML(section, r) {
       </div></div>`}
       <div class="full"><label class="form-label">Name *</label>
         <input class="form-input" id="f_name" value="${esc(v.name||'')}"></div>
+      <div>
+        <label class="form-label">Vorname <span style="color:var(--dim);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="f_vorname" type="text" placeholder="z.B. Max" value="${esc(r?.vorname||'')}">
+      </div>
+      <div>
+        <label class="form-label">Nachname <span style="color:var(--dim);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="f_nachname" type="text" placeholder="z.B. Mustermann" value="${esc(r?.nachname||'')}">
+      </div>
+      <div>
+        <label class="form-label">Betriebliche MA-Nr. <span style="color:var(--dim);font-weight:400">(optional, Freitext)</span></label>
+        <input class="form-input" id="f_externe_nr" type="text" placeholder="z.B. 2024-042" value="${esc(r?.externe_nr||'')}">
+      </div>
       <div><label class="form-label">Telefon</label>
         <input class="form-input" id="f_telefon" value="${esc(v.telefon||'')}"></div>
       <div><label class="form-label">Eintrittsdatum</label>
@@ -1190,6 +1242,9 @@ function buildRecord(section) {
   switch(section) {
     case 'mitarbeiter': return {
       name:           getFieldVal('f_name'),
+      vorname:        getFieldVal('f_vorname') || null,
+      nachname:       getFieldVal('f_nachname') || null,
+      externe_nr:     getFieldVal('f_externe_nr') || null,
       telefon:        getFieldVal('f_telefon'),
       eintrittsdatum: getFieldVal('f_eintrittsdatum'),
       aktiv:          getFieldVal('f_aktiv', true)
@@ -1326,8 +1381,10 @@ async function openQR(id) {
   // Konfig-Hinweis befüllen
   const cfg = loadLabelConfig();
   const fmtLabel = cfg.labelFormat === 'lg' ? '12 je Bogen · 104×48mm' : '21 je Bogen · 70×42mm';
-  const parts = [cfg.showName && 'Name', cfg.showNr && 'Nr.', cfg.showLfd && 'Lfd-Nr.'].filter(Boolean);
-  const inhalt = parts.length ? parts.join(', ') : 'Nur QR-Code';
+  const fields = cfg.labelFields || ['name','ma_nr','lfd_nr'];
+  const inhalt = fields.length
+    ? fields.map(f => LABEL_FIELD_DEFS.find(d=>d.id===f)?.label || f).join(', ')
+    : 'Nur QR-Code';
   document.getElementById('qrConfigHint').innerHTML =
     `Format: <strong>${fmtLabel}</strong> · Inhalt: <strong>${inhalt}</strong> — <a href="#" onclick="closeQR();navigate('konfiguration');return false;" style="color:var(--primary)">Konfiguration ändern</a>`;
   updateQRPreview();
@@ -1342,17 +1399,48 @@ function qrContent(nr, lfd) { return `${String(nr).padStart(5,'0')}/${String(lfd
 function fmtNr(n, pad=5) { return String(n).padStart(pad, '0'); }
 
 function loadLabelConfig() {
-  const defaults = { labelFormat:'sm', showName:true, showNr:true, showLfd:true };
-  try { return Object.assign(defaults, JSON.parse(localStorage.getItem('harvio_label_cfg') || '{}')); }
-  catch { return defaults; }
+  const defaults = { labelFormat:'sm', labelFields:['name','ma_nr','lfd_nr'] };
+  try {
+    const stored = JSON.parse(localStorage.getItem('harvio_label_cfg') || '{}');
+    // Backward-compat: alte Boolean-Felder → labelFields Array
+    if (!stored.labelFields) {
+      const f = [];
+      if (stored.showName !== false) f.push('name');
+      if (stored.showNr   !== false) f.push('ma_nr');
+      if (stored.showLfd  !== false) f.push('lfd_nr');
+      stored.labelFields = f.length ? f : defaults.labelFields;
+    }
+    return Object.assign({}, defaults, stored);
+  } catch { return defaults; }
 }
 function saveLabelConfig(cfg) {
   localStorage.setItem('harvio_label_cfg', JSON.stringify(cfg));
 }
 function getLabelOpts() {
   const c = loadLabelConfig();
-  return { format: c.labelFormat || 'sm', showName: !!c.showName, showNr: !!c.showNr, showLfd: !!c.showLfd };
+  return { format: c.labelFormat || 'sm', fields: c.labelFields || ['name','ma_nr','lfd_nr'] };
 }
+
+function getLabelFieldValue(emp, lfdNr, field) {
+  switch(field) {
+    case 'vorname':    return emp.vorname    || '';
+    case 'nachname':   return emp.nachname   || '';
+    case 'name':       return emp.name       || '';
+    case 'ma_nr':      return `MA-${fmtNr(emp.mitarbeiter_nr)}`;
+    case 'externe_nr': return emp.externe_nr || '';
+    case 'lfd_nr':     return `#${fmtNr(lfdNr)}`;
+    default: return '';
+  }
+}
+
+const LABEL_FIELD_DEFS = [
+  { id:'vorname',    label:'Vorname' },
+  { id:'nachname',   label:'Nachname' },
+  { id:'name',       label:'Name (gesamt)' },
+  { id:'ma_nr',      label:'MA-Nr. (intern)' },
+  { id:'externe_nr', label:'Betriebl. MA-Nr.' },
+  { id:'lfd_nr',     label:'Lfd. Nummer (QR)' },
+];
 
 function buildLabelHTML(emp, lfdNr) {
   const nr  = emp.mitarbeiter_nr;
@@ -1365,13 +1453,13 @@ function updateQRPreview() {
   const opts  = getLabelOpts();
   const count = opts.format === 'lg' ? 12 : 21;
   const start = qrStartNr;
-  const qrOnly = !opts.showName && !opts.showNr && !opts.showLfd;
+  const qrOnly = opts.fields.length === 0;
   const qrPreviewSize = opts.format === 'lg' ? 64 : 52;
   const preview = document.getElementById('qrPreview');
   preview.innerHTML = '';
   const shown = Math.min(count, 3);
   for (let i = 0; i < shown; i++) {
-    const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
+    const { qr } = buildLabelHTML(qrEmployee, start + i);
     const card = document.createElement('div');
     card.className = 'qr-preview-label';
     const qrDiv = document.createElement('div');
@@ -1379,12 +1467,13 @@ function updateQRPreview() {
     if (!qrOnly) {
       const info = document.createElement('div');
       info.className = 'qr-preview-info';
-      info.innerHTML = [
-        opts.showName ? `<div class="name">${esc(name)}</div>` : '',
-        (opts.showNr || opts.showLfd)
-          ? `<div class="nr">${[opts.showNr ? ma : '', opts.showLfd ? lfd : ''].filter(Boolean).join(' · ')}</div>`
-          : ''
-      ].join('');
+      const lines = opts.fields.map(f => {
+        const v = getLabelFieldValue(qrEmployee, start + i, f);
+        if (!v) return '';
+        const isLarge = ['name','nachname'].includes(f);
+        return `<div class="${isLarge ? 'name' : 'nr'}">${esc(v)}</div>`;
+      }).filter(Boolean).join('');
+      info.innerHTML = lines;
       card.appendChild(info);
     }
     preview.appendChild(card);
@@ -1422,12 +1511,12 @@ async function printLabels() {
 
   // Druckseite aufbauen
   const opts2  = getLabelOpts();
-  const qrOnly  = !opts2.showName && !opts2.showNr && !opts2.showLfd;
+  const qrOnly  = opts2.fields.length === 0;
   const qrSize  = qrOnly ? (opts2.format === 'lg' ? 160 : 130) : (opts2.format === 'lg' ? 120 : 90);
   const sheet  = document.getElementById('labelSheet');
   sheet.innerHTML = '';
   for (let i = 0; i < count; i++) {
-    const { qr, name, ma, lfd } = buildLabelHTML(qrEmployee, start + i);
+    const { qr } = buildLabelHTML(qrEmployee, start + i);
     const label = document.createElement('div');
     label.className = `label fmt-${opts2.format}${qrOnly ? ' qr-only' : ''}`;
     const qrDiv = document.createElement('div');
@@ -1436,12 +1525,15 @@ async function printLabels() {
     if (!qrOnly) {
       const text = document.createElement('div');
       text.className = 'label-text';
-      text.innerHTML = [
-        opts2.showName ? `<div class="label-name">${esc(name)}</div>` : '',
-        opts2.showNr   ? `<div class="label-ma">${ma}</div>` : '',
-        opts2.showLfd  ? `<div class="label-lfd">Etik. ${lfd}</div>` : '',
-        `<div class="label-app">Ripelog</div>`
-      ].join('');
+      text.innerHTML = opts2.fields.map(f => {
+        const v = getLabelFieldValue(qrEmployee, start + i, f);
+        if (!v) return '';
+        const isName = ['name','vorname','nachname'].includes(f);
+        const isSmall = ['lfd_nr','externe_nr'].includes(f);
+        if (isName)  return `<div class="label-name">${esc(v)}</div>`;
+        if (isSmall) return `<div class="label-lfd">${esc(v)}</div>`;
+        return `<div class="label-ma">${esc(v)}</div>`;
+      }).filter(Boolean).join('') + `<div class="label-app">Harvio</div>`;
       label.appendChild(text);
     }
     sheet.appendChild(label);
@@ -1498,7 +1590,7 @@ async function initProtokoll() {
     cache.sorten.length      || sbGet('sorten',      'order=name&select=id,name').then(r => { cache.sorten = r; }),
     cache.qualitaeten.length || sbGet('qualitaeten', 'order=sort_order&select=id,code,label').then(r => { cache.qualitaeten = r; }),
     cache.gebinde.length     || sbGet('gebinde',     'order=sort_order&select=id,label').then(r => { cache.gebinde = r; }),
-    cache.mitarbeiter.length || sbGet('pfluecker',   'order=mitarbeiter_nr&select=id,name').then(r => { cache.mitarbeiter = r; }),
+    cache.mitarbeiter.length || sbGet('pfluecker',   'order=mitarbeiter_nr&select=id,name,vorname,nachname,externe_nr,mitarbeiter_nr').then(r => { cache.mitarbeiter = r; }),
   ]);
   await loadProtokoll();
 }
@@ -1520,6 +1612,7 @@ async function loadProtokoll() {
 
   try {
     const data = await sbGet('ernteeintraege', qs);
+    window._protokollData = data; // für Excel-Export
     const countEl = document.getElementById('rowCount');
     if (countEl) countEl.textContent = ` · ${data.length} Einträge`;
     // Dropdowns mit vorhandenen Werten füllen
@@ -1650,6 +1743,28 @@ async function deleteProtoEntry(id) {
   } catch(e) {
     alert('Fehler beim Löschen: ' + e.message);
   }
+}
+
+function exportProtoExcel() {
+  if (!window.XLSX) { alert('Excel-Export nicht verfügbar.'); return; }
+  if (!window._protokollData?.length) { alert('Keine Daten zum Exportieren.'); return; }
+  const rows = window._protokollData.map(r => ({
+    'Datum':      r.datum,
+    'Zeit':       (r.uhrzeit||'').slice(0,5),
+    'Pflücker':   r.pfluecker?.name || '',
+    'Feld':       r.feld?.name || '',
+    'Sorte':      r.sorte?.name || '',
+    'Gebinde':    r.gebinde?.label || '',
+    'Menge':      r.menge,
+    'Gewicht kg': r.menge && r.gebinde?.gewicht_kg ? +(r.menge * r.gebinde.gewicht_kg).toFixed(2) : 0,
+    'QR-Nr':      r.etiketten_id || '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Protokoll');
+  const von  = document.getElementById('proto_von')?.value || '';
+  const bis  = document.getElementById('proto_bis')?.value || '';
+  XLSX.writeFile(wb, `Harvio_Protokoll${von?'_'+von:''}${bis&&bis!==von?'_'+bis:''}.xlsx`);
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -1822,7 +1937,17 @@ function renderDashboard(data) {
     ${dashCard('🗺️', 'Gebinde nach Feld', barRows(byFeld, 'gebinde'))}
   </div>` : '';
 
-  document.getElementById('tableContainer').innerHTML = kpiHTML + row1 + row2 + row3 + row4;
+  // Sektion: Je Mitarbeiter je Woche
+  const aktWoche = isoWeek(new Date().toISOString().slice(0,10));
+  const mitarbeiterGesamt = agg(data, r => r.pfluecker?.name||'?');
+  const byPflWocheAgg = agg(data.filter(r => isoWeek(r.datum) === aktWoche), r => r.pfluecker?.name||'?');
+
+  const row5 = `<div class="dash-grid">
+    ${dashCard('👤', 'Je Mitarbeiter (gesamt)', barRows(mitarbeiterGesamt, 'kg', 'blue'))}
+    ${dashCard('👤', 'Je Mitarbeiter · Diese Woche', byPflWocheAgg.length ? barRows(byPflWocheAgg, 'kg', 'blue') : '<div class="dash-empty">Keine Daten diese Woche</div>')}
+  </div>`;
+
+  document.getElementById('tableContainer').innerHTML = kpiHTML + row1 + row2 + row3 + row4 + row5;
 }
 
 // ── PASSWORT ÄNDERN ──────────────────────────────────────────

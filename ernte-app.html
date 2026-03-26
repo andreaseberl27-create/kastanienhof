@@ -1601,6 +1601,7 @@ function startScanOrWarn() {
 
 // ── MANUELLE ERFASSUNG ────────────────────────────────────────
 let manualSelectedPicker = null;
+let setupFeldFilterId = null; // Fruchtart-Filter im Schicht-Setup
 
 function openManualEntry() {
   if (!SCHICHT.feld || !SCHICHT.gebinde) { openSetup(); return; }
@@ -1734,6 +1735,7 @@ function updateContextStrip() {
 }
 
 function openSetup() {
+  setupFeldFilterId = null;
   document.getElementById('setupOverlay').classList.remove('hidden');
   renderSetupSheet();
 }
@@ -1792,11 +1794,31 @@ function renderSetupSheet() {
       </div>
     </div>` : '';
 
+  // Felder nach aktuellem Filter einschränken
+  const fruchtartenMitFeld = FRUCHTARTEN.filter(f =>
+    FELDER_DATA.some(fd => fd.fruchtart_id === f.id)
+  );
+  const filteredFelder = setupFeldFilterId
+    ? FELDER_DATA.filter(f => f.fruchtart_id === setupFeldFilterId).map(f => f.name)
+    : FELDER;
+
+  function feldFilterChips() {
+    if (fruchtartenMitFeld.length < 2) return '';
+    return `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        <div class="chip${!setupFeldFilterId ? ' active-green' : ''}" style="font-size:12px;padding:4px 10px" onclick="setSetupFeldFilter(null)">Alle</div>
+        ${fruchtartenMitFeld.map(f => `
+          <div class="chip${setupFeldFilterId === f.id ? ' active-green' : ''}" style="font-size:12px;padding:4px 10px" onclick="setSetupFeldFilter(${f.id})">${f.emoji} ${f.name}</div>
+        `).join('')}
+      </div>`;
+  }
+
   const canClose = SCHICHT.feld && SCHICHT.gebinde;
   el.innerHTML = `
     <div class="setup-section">
       <div class="section-title">🗺️ Feld <span style="color:var(--rot-hell);font-size:11px">*</span></div>
-      <div class="chip-wrap">${chips(FELDER, SCHICHT.feld, 'selectSchichtFeld')}</div>
+      ${feldFilterChips()}
+      <div class="chip-wrap">${filteredFelder.length ? chips(filteredFelder, SCHICHT.feld, 'selectSchichtFeld') : '<span style="color:var(--text-dim);font-size:13px">Keine Felder für diese Fruchtart</span>'}</div>
     </div>
     ${fruchtartBlock}
     ${sorteBlock}
@@ -1811,6 +1833,10 @@ function renderSetupSheet() {
   `;
 }
 
+function setSetupFeldFilter(id) {
+  setupFeldFilterId = id;
+  renderSetupSheet();
+}
 function selectSchichtFeld(name) {
   SCHICHT.feld = name;
   SCHICHT.sorte = null;
