@@ -752,6 +752,7 @@ async function loadSection(section) {
   }
   const cfg = SECTION_CONFIG[section];
   cache[section] = await sbGet(cfg.table, `order=${cfg.order}`);
+  if (section === 'mitarbeiter') cache.mitarbeiter = cache.mitarbeiter.map(m=>({...m,displayName:pflName(m)}));
   renderSection(section);
   // Aktive Suche erneut anwenden
   if (['mitarbeiter','felder','sorten','fruchtarten','qualitaeten','gebinde'].includes(section) &&
@@ -797,6 +798,9 @@ function fruchtartName(id) {
 function nrBadge(nr) {
   return `<span class="badge-nr" data-tip="Eindeutige Mitarbeiter-Nr. · automatisch vergeben">MA-${String(nr).padStart(5,'0')}</span>`;
 }
+function pflName(p) {
+  return [p?.vorname, p?.nachname].filter(Boolean).join(' ') || '–';
+}
 
 function renderMitarbeiter(data) {
   return `<table>
@@ -806,7 +810,7 @@ function renderMitarbeiter(data) {
     <tbody>${data.length ? data.map(r => `
       <tr>
         <td>${nrBadge(r.mitarbeiter_nr)}</td>
-        <td style="font-weight:600">${esc([r.vorname,r.nachname].filter(Boolean).join(' ') || r.name || '–')}</td>
+        <td style="font-weight:600">${esc(pflName(r))}</td>
         <td>${r.telefon ? esc(r.telefon) : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${r.externe_nr ? `<span style="font-family:monospace;font-size:12px">${esc(r.externe_nr)}</span>` : '<span style="color:var(--dim)">–</span>'}</td>
         <td>${r.eintrittsdatum ? new Date(r.eintrittsdatum).toLocaleDateString('de-DE') : '<span style="color:var(--dim)">–</span>'}</td>
@@ -1600,7 +1604,7 @@ async function initProtokoll() {
     cache.sorten.length      || sbGet('sorten',      'order=name&select=id,name').then(r => { cache.sorten = r; }),
     cache.qualitaeten.length || sbGet('qualitaeten', 'order=sort_order&select=id,code,label').then(r => { cache.qualitaeten = r; }),
     cache.gebinde.length     || sbGet('gebinde',     'order=sort_order&select=id,label').then(r => { cache.gebinde = r; }),
-    cache.mitarbeiter.length || sbGet('pfluecker',   'order=mitarbeiter_nr&select=id,name,vorname,nachname,externe_nr,mitarbeiter_nr').then(r => { cache.mitarbeiter = r; }),
+    cache.mitarbeiter.length || sbGet('pfluecker', 'order=mitarbeiter_nr&select=id,vorname,nachname,externe_nr,mitarbeiter_nr').then(r => { cache.mitarbeiter = r.map(m=>({...m,displayName:pflName(m)})); }),
   ]);
   await loadProtokoll();
 }
@@ -1614,7 +1618,7 @@ async function loadProtokoll() {
   document.getElementById('tableContainer').innerHTML =
     '<table><thead><tr><th colspan="10" style="text-align:center;padding:24px;color:var(--dim)">Lade…</th></tr></thead></table>';
 
-  let qs = 'select=id,datum,uhrzeit,menge,reihe,etiketten_id,pfluecker:pfluecker_id(id,name),feld:feld_id(id,name),sorte:sorte_id(id,name),gebinde:gebinde_id(id,label,gewicht_kg)&order=datum.desc,uhrzeit.desc&limit=500';
+  let qs = 'select=id,datum,uhrzeit,menge,reihe,etiketten_id,pfluecker:pfluecker_id(id,vorname,nachname,mitarbeiter_nr,externe_nr),feld:feld_id(id,name),sorte:sorte_id(id,name),gebinde:gebinde_id(id,label,gewicht_kg)&order=datum.desc,uhrzeit.desc&limit=500';
   if (von)       qs += `&datum=gte.${von}`;
   if (bis)       qs += `&datum=lte.${bis}`;
   if (feld)      qs += `&feld_id=eq.${feld}`;
@@ -1637,7 +1641,7 @@ async function loadProtokoll() {
 function fillProtoDropdowns(data) {
   // Eindeutige Felder und Pflücker aus den geladenen Daten (als Objekte mit id+name)
   const felderSeen = new Map(); data.forEach(r => r.feld && felderSeen.set(r.feld.id, r.feld.name));
-  const pflSeen    = new Map(); data.forEach(r => r.pfluecker && pflSeen.set(r.pfluecker.id, r.pfluecker.name));
+  const pflSeen    = new Map(); data.forEach(r => r.pfluecker && pflSeen.set(r.pfluecker.id, pflName(r.pfluecker)));
   const curFeld = document.getElementById('proto_feld').value;
   const curPfl  = document.getElementById('proto_pfluecker').value;
   document.getElementById('proto_feld').innerHTML =
@@ -1664,7 +1668,7 @@ function renderProtokollTable(data) {
   const rows = data.map(r => `<tr>
     <td style="white-space:nowrap">${esc(r.datum||'–')}</td>
     <td style="color:var(--dim);font-size:13px">${esc(r.uhrzeit||'–')}</td>
-    <td style="font-weight:600">${esc(r.pfluecker?.name||'–')}</td>
+    <td style="font-weight:600">${esc(pflName(r.pfluecker))}</td>
     <td>${esc(r.feld?.name||'–')}</td>
     <td style="color:var(--dim)">${esc(r.sorte?.name||'–')}</td>
     <td style="color:var(--dim);font-size:13px">${esc(r.gebinde?.label||'–')}</td>
@@ -1703,7 +1707,7 @@ function openProtoEdit(id) {
       const opt = (arr, valKey, labelKey, cur) =>
         `<option value="">– bitte wählen –</option>` +
         arr.map(x => `<option value="${x[valKey]}" ${x[valKey]==cur?'selected':''}>${esc(x[labelKey])}</option>`).join('');
-      document.getElementById('pe_pfluecker_id').innerHTML = opt(cache.mitarbeiter, 'id', 'name',  r.pfluecker_id);
+      document.getElementById('pe_pfluecker_id').innerHTML = opt(cache.mitarbeiter, 'id', 'displayName', r.pfluecker_id);
       document.getElementById('pe_feld_id').innerHTML      = opt(cache.felder,      'id', 'name',  r.feld_id);
       document.getElementById('pe_sorte_id').innerHTML     = `<option value="">– keine –</option>` +
         cache.sorten.map(s => `<option value="${s.id}" ${s.id==r.sorte_id?'selected':''}>${esc(s.name)}</option>`).join('');
@@ -1827,7 +1831,7 @@ async function loadAuswertung() {
   const bis = document.getElementById('dash_bis').value;
   document.getElementById('tableContainer').innerHTML =
     '<div class="dash-empty">Lade Auswertung…</div>';
-  let qs = 'select=datum,stunde,menge,pfluecker:pfluecker_id(name),feld:feld_id(name),sorte:sorte_id(name),qualitaet:qualitaet_id(code),gebinde:gebinde_id(label,gewicht_kg)&order=datum.desc&limit=5000';
+  let qs = 'select=datum,stunde,menge,pfluecker:pfluecker_id(vorname,nachname),feld:feld_id(name),sorte:sorte_id(name),qualitaet:qualitaet_id(code),gebinde:gebinde_id(label,gewicht_kg)&order=datum.desc&limit=5000';
   if (von) qs += `&datum=gte.${von}`;
   if (bis) qs += `&datum=lte.${bis}`;
   try {
@@ -1900,7 +1904,7 @@ function renderDashboard(data) {
   const totalKg      = data.reduce((s,r) => s + rowKg(r), 0);
   const totalGebinde = data.reduce((s,r) => s + parseFloat(r.menge || 1), 0);
   const avgKg        = totalGebinde ? totalKg / totalGebinde : 0;
-  const pflSet       = new Set(data.map(r => r.pfluecker?.name).filter(Boolean));
+  const pflSet       = new Set(data.map(r => pflName(r.pfluecker)).filter(v=>v!=='–'));
   const feldSet      = new Set(data.map(r => r.feld?.name).filter(Boolean));
 
   // Heute vs. Vortag für KPI-Trend
@@ -1908,7 +1912,7 @@ function renderDashboard(data) {
   const kgHeute = data.filter(r => r.datum === today).reduce((s,r) => s + rowKg(r), 0);
 
   const byFeld      = agg(data, r => r.feld?.name);
-  const byPfluecker = agg(data, r => r.pfluecker?.name);
+  const byPfluecker = agg(data, r => pflName(r.pfluecker));
   const byQual      = agg(data, r => r.qualitaet?.code);
   const bySorte     = agg(data, r => r.sorte?.name);
   const byTag       = agg(data, r => r.datum).sort((a,b) => b[0].localeCompare(a[0])).slice(0,14);
@@ -1961,8 +1965,8 @@ function renderDashboard(data) {
 
   // Sektion: Je Mitarbeiter je Woche
   const aktWoche = isoWeek(new Date().toISOString().slice(0,10));
-  const mitarbeiterGesamt = agg(data, r => r.pfluecker?.name||'?');
-  const byPflWocheAgg = agg(data.filter(r => isoWeek(r.datum) === aktWoche), r => r.pfluecker?.name||'?');
+  const mitarbeiterGesamt = agg(data, r => pflName(r.pfluecker));
+  const byPflWocheAgg = agg(data.filter(r => isoWeek(r.datum) === aktWoche), r => pflName(r.pfluecker));
 
   const row5 = `<div class="dash-grid">
     ${dashCard('👤', 'Je Mitarbeiter (gesamt)', barRows(mitarbeiterGesamt, 'kg', 'blue'))}

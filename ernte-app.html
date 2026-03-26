@@ -942,6 +942,9 @@ function clearToday(){
   if(confirm(`Alle ${entries.length} Einträge von heute löschen?`)){entries=[];saveEntries();updateSummary();renderProtokoll();renderRecentScans();showToast('🗑️ Gelöscht','var(--braun)');}
 }
 function showToast(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--gruen)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function pflFullName(p) {
+  return [p?.vorname, p?.nachname].filter(Boolean).join(' ') || p?.name || '–';
+}
 
 // ── AUTH ──────────────────────────────────────────────────────
 
@@ -1085,7 +1088,7 @@ function rowToEntry(r) {
     // Anzeigenamen (aus Metadaten aufgelöst)
     feld:     FELDER_DATA.find(f => f.id === r.feld_id)?.name        || '–',
     sorte:    SORTEN_DATA.find(s => s.id === r.sorte_id)?.name       || '',
-    pflücker: PFLÜCKER_DATA.find(p => p.id === r.pfluecker_id)?.name || '–',
+    pflücker: pflFullName(PFLÜCKER_DATA.find(p => p.id === r.pfluecker_id)) ,
     qualität: QUALITAETEN.find(q => q.id === r.qualitaet_id)?.code   || null,
     korbtyp:  gb?.label        || '–',
   };
@@ -1220,7 +1223,7 @@ async function loadMetadata() {
     const [fR, sR, pR, qR, gR, faR] = await Promise.all([
       fetch(`${CONFIG.url}/rest/v1/felder?aktiv=eq.true&order=name`,             {headers}),
       fetch(`${CONFIG.url}/rest/v1/sorten?aktiv=eq.true&order=name`,             {headers}),
-      fetch(`${CONFIG.url}/rest/v1/pfluecker?aktiv=eq.true&order=name`,          {headers}),
+      fetch(`${CONFIG.url}/rest/v1/pfluecker?aktiv=eq.true&order=nachname`,          {headers}),
       fetch(`${CONFIG.url}/rest/v1/qualitaeten?aktiv=eq.true&order=sort_order`,  {headers}),
       fetch(`${CONFIG.url}/rest/v1/gebinde?aktiv=eq.true&order=sort_order`,      {headers}),
       fetch(`${CONFIG.url}/rest/v1/fruchtarten?aktiv=eq.true&order=sort_order`,  {headers}),
@@ -1239,8 +1242,8 @@ async function loadMetadata() {
     }
     if (pR.ok) {
       PFLÜCKER_DATA = await pR.json();
-      PFLÜCKER = PFLÜCKER_DATA.map(r => r.name);
-      PFLÜCKER_NR_MAP    = Object.fromEntries(PFLÜCKER_DATA.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.name]));
+      PFLÜCKER = PFLÜCKER_DATA.map(r => pflFullName(r));
+      PFLÜCKER_NR_MAP    = Object.fromEntries(PFLÜCKER_DATA.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, pflFullName(r)]));
       PFLÜCKER_NR_ID_MAP = Object.fromEntries(PFLÜCKER_DATA.filter(r => r.mitarbeiter_nr != null).map(r => [r.mitarbeiter_nr, r.id]));
       localStorage.setItem('sb_pfluecker',       JSON.stringify(PFLÜCKER));
       localStorage.setItem('sb_pfluecker_nr',    JSON.stringify(PFLÜCKER_NR_MAP));
@@ -1587,7 +1590,7 @@ async function addEntryFromScan(pickerName) {
   if (!feld || !gebinde) return;
   const feldObj  = FELDER_DATA.find(f => f.name === feld);
   const sorteObj = SORTEN_DATA.find(s => s.name === sorte);
-  const pflObj   = PFLÜCKER_DATA.find(p => p.name === pickerName);
+  const pflObj   = PFLÜCKER_DATA.find(p => pflFullName(p) === pickerName);
   const menge    = scanMenge;
   const entry = {
     id: Date.now(), datum: todayStr,
@@ -1654,7 +1657,7 @@ function selectManualPicker(name) {
 async function confirmManualEntry() {
   if (!manualSelectedPicker) return;
   const pickerName = manualSelectedPicker;
-  const pflObj = PFLÜCKER_DATA.find(p => p.name === pickerName);
+  const pflObj = PFLÜCKER_DATA.find(p => pflFullName(p) === pickerName);
   if (!pflObj?.mitarbeiter_nr) {
     showToast('⚠️ Mitarbeiter hat keine Nummer – bitte im Admin-Panel prüfen', 'var(--braun)');
     return;
