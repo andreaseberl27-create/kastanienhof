@@ -111,6 +111,9 @@ body {
 }
 .success-url strong { color:var(--gruen); font-family:'Inter',sans-serif; }
 </style>
+<script src="/config.js"></script>
+<script src="https://browser.sentry-cdn.com/8.38.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>Sentry.init({ dsn: window.RIPELOG_CONFIG.sentryDsn, environment: window.RIPELOG_CONFIG.sentryEnv, release: window.RIPELOG_CONFIG.release });</script>
 </head>
 <body>
 
@@ -173,7 +176,7 @@ body {
 </div>
 
 <script>
-const SB_EDGE = 'https://xbfhsnsyisvehmonyrxh.supabase.co/functions/v1/signup-betrieb';
+const SB_EDGE = window.RIPELOG_CONFIG.supabaseUrl + '/functions/v1/signup-betrieb';
 
 function checkStrength() {
   const pw   = document.getElementById('pw1').value;

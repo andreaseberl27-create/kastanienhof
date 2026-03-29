@@ -1,0 +1,16 @@
+[build]
+  command = "bash build.sh"
+  publish = "."
+
+# ── PRODUCTION (main branch) ──────────────────────────────────
+[context.production.environment]
+  SENTRY_ENV      = "production"
+  RELEASE_VERSION = "ripelog@1.0.0"
+  # SUPABASE_URL, SUPABASE_KEY, SENTRY_DSN → in Netlify UI gesetzt (nicht im Repo)
+
+# ── INT / DEVELOP (develop branch) ────────────────────────────
+[context.branch-deploy.environment]
+  SENTRY_ENV      = "develop"
+  RELEASE_VERSION = "ripelog@develop"
+  # SUPABASE_URL, SUPABASE_KEY → INT-Projekt-Werte in Netlify UI gesetzt
+  # SENTRY_DSN → selbes DSN wie prod, nur environment-Tag wechselt

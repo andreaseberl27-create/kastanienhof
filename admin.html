@@ -340,6 +340,9 @@ tbody tr:hover { background:#faf6ee; }
 .proto-del-btn { color:var(--red) !important; border-color:transparent; }
 .proto-del-btn:hover { background:#fee2e2 !important; border-color:var(--red) !important; }
 </style>
+<script src="/config.js"></script>
+<script src="https://browser.sentry-cdn.com/8.38.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>Sentry.init({ dsn: window.RIPELOG_CONFIG.sentryDsn, environment: window.RIPELOG_CONFIG.sentryEnv, release: window.RIPELOG_CONFIG.release });</script>
 </head>
 <body>
 
@@ -406,6 +409,10 @@ tbody tr:hover { background:#faf6ee; }
         <div class="nav-item" id="nav-auswertung" onclick="navigate('auswertung')"
           data-tip="Ernte-Auswertungen · Kilo und Gebinde je Feld, Tag, Pflücker …">
           <span class="icon">📊</span> Auswertung
+        </div>
+        <div class="nav-item" id="nav-anmeldungen" onclick="navigate('anmeldungen')"
+          data-tip="Wer hat sich wann angemeldet – Login-Protokoll">
+          <span class="icon">🔐</span> Anmeldungen
         </div>
         <div class="nav-item" id="nav-konfiguration" onclick="navigate('konfiguration')"
           data-tip="Etikettenformat und weitere Betriebseinstellungen">
@@ -562,8 +569,8 @@ tbody tr:hover { background:#faf6ee; }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-const SB_URL    = 'https://xbfhsnsyisvehmonyrxh.supabase.co';
-const SB_KEY    = 'sb_publishable_VMr7U2_1nwBJg8D3Z5MW2g_Ki81tU1I';
+const SB_URL    = window.RIPELOG_CONFIG.supabaseUrl;
+const SB_KEY    = window.RIPELOG_CONFIG.supabaseKey;
 
 // ── STATE ────────────────────────────────────────────────────
 let session = null;
@@ -587,6 +594,7 @@ const SECTION_CONFIG = {
   gebinde:      { table:'gebinde',      label:'Gebinde',      order:'sort_order' },
   protokoll:    { table:'ernteeintraege', label:'Protokoll',  order:'datum', special:true },
   auswertung:   { table:'ernteeintraege', label:'Auswertung', order:'datum', special:true },
+  anmeldungen:  { table:'activity_log',   label:'Anmeldungen', order:'created_at', special:true },
   konfiguration:   { table:null, label:'Konfiguration', order:null }
 };
 
@@ -623,6 +631,26 @@ async function sbDelete(table, id) {
 }
 
 // ── AUTH ─────────────────────────────────────────────────────
+async function logActivity(aktion, email, userId, fehler = null) {
+  try {
+    const token = session?.access_token;
+    if (!token) return;
+    await fetch(`${SB_URL}/rest/v1/activity_log`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        user_id:    userId  || null,
+        betrieb_id: currentBetriebId || null,
+        email:      email   || null,
+        aktion,
+        app:        'admin',
+        fehler:     fehler  || null,
+        user_agent: navigator.userAgent.substring(0, 200)
+      })
+    });
+  } catch { /* Logging darf App nie blockieren */ }
+}
+
 async function login() {
   const username = document.getElementById('loginUser').value.trim().toLowerCase();
   const password = document.getElementById('loginPass').value;
@@ -640,17 +668,24 @@ async function login() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || 'Anmeldung fehlgeschlagen');
     session = data;
-    localStorage.setItem('admin_session', JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, username }));
+    const userId = data.user?.id || null;
+    localStorage.setItem('admin_session', JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, username, user_id: userId }));
+    if (typeof Sentry !== 'undefined') Sentry.setUser({ email: username, id: userId });
+    await logActivity('login_success', username, userId);
     showApp(username);
   } catch(e) {
     errEl.textContent = e.message;
+    if (typeof Sentry !== 'undefined') Sentry.captureMessage('login_fehler', { level: 'info', extra: { email: username, fehler: e.message } });
   } finally {
     btn.textContent = 'Anmelden'; btn.disabled = false;
   }
 }
 async function logout() {
   if (!confirm('Abmelden?')) return;
+  const saved = JSON.parse(localStorage.getItem('admin_session') || 'null');
+  await logActivity('logout', saved?.username, saved?.user_id);
   try { await fetch(`${SB_URL}/auth/v1/logout`, { method:'POST', headers:sbHeaders() }); } catch {}
+  if (typeof Sentry !== 'undefined') Sentry.setUser(null);
   session = null;
   currentUserRole = null;
   currentUserId = null;
@@ -728,6 +763,8 @@ async function navigate(section) {
     document.getElementById('maFilterCount').textContent = '';
     document.getElementById('maSearch').placeholder =
       section === 'mitarbeiter' ? 'Name oder MA-Nr. …' : 'Name …';
+  } else if (section === 'anmeldungen') {
+    addBtn.style.display = 'none';
   } else if (section === 'konfiguration') {
     addBtn.style.display = 'none';
   } else {
@@ -739,8 +776,9 @@ async function navigate(section) {
 
 async function loadSection(section) {
   if (section === 'konfiguration') { renderKonfiguration(); return; }
-  if (section === 'auswertung') { await loadAuswertung(); return; }
-  if (section === 'protokoll')  { await initProtokoll();  return; }
+  if (section === 'auswertung')  { await loadAuswertung();   return; }
+  if (section === 'protokoll')   { await initProtokoll();    return; }
+  if (section === 'anmeldungen') { await loadActivityLog();  return; }
   if (section === 'betriebsleiter') {
     cache.betriebsleiter = await sbGet('betrieb_mitglieder', 'order=username&select=betrieb_id,user_id,rolle,username');
     renderSection(section);
@@ -1974,6 +2012,61 @@ function renderDashboard(data) {
   </div>`;
 
   document.getElementById('tableContainer').innerHTML = kpiHTML + row1 + row2 + row3 + row4 + row5;
+}
+
+// ── ANMELDUNGS-LOG ───────────────────────────────────────────
+async function loadActivityLog() {
+  try {
+    const rows = await sbGet('activity_log', 'order=created_at.desc&limit=100');
+    if (!rows.length) {
+      document.getElementById('tableContainer').innerHTML =
+        '<div style="padding:32px;text-align:center;color:var(--dim)">Noch keine Anmeldungen aufgezeichnet.</div>';
+      return;
+    }
+
+    // KPI-Zusammenfassung
+    const logins  = rows.filter(r => r.aktion === 'login_success');
+    const fehler  = rows.filter(r => r.aktion === 'login_fehler');
+    const heute   = new Date().toISOString().slice(0,10);
+    const heuteN  = logins.filter(r => r.created_at?.slice(0,10) === heute).length;
+    const apps    = [...new Set(logins.map(r => r.app).filter(Boolean))];
+
+    const kpi = `<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card"><div class="kpi-label">Anmeldungen gesamt</div><div class="kpi-value">${logins.length}</div><div class="kpi-sub">Heute: ${heuteN}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Fehlversuche</div><div class="kpi-value" style="color:${fehler.length>0?'#dc2626':'inherit'}">${fehler.length}</div><div class="kpi-sub">letzte 100 Einträge</div></div>
+      <div class="kpi-card"><div class="kpi-label">Letzte Anmeldung</div><div class="kpi-value" style="font-size:14px">${logins[0] ? new Date(logins[0].created_at).toLocaleString('de') : '–'}</div><div class="kpi-sub">${logins[0]?.email || '–'}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Apps genutzt</div><div class="kpi-value" style="font-size:18px">${apps.map(a => a === 'admin' ? '🖥️ Admin' : '📱 Ernte').join(', ') || '–'}</div></div>
+    </div>`;
+
+    const aktionBadge = a => {
+      if (a === 'login_success') return '<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">✓ Login</span>';
+      if (a === 'logout')        return '<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">↩ Logout</span>';
+      return '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">✗ Fehler</span>';
+    };
+
+    const tableRows = rows.map(r => `<tr>
+      <td>${new Date(r.created_at).toLocaleString('de')}</td>
+      <td>${r.email || '–'}</td>
+      <td>${aktionBadge(r.aktion)}</td>
+      <td>${r.app === 'admin' ? '🖥️ Admin' : r.app === 'ernte-app' ? '📱 Ernte-App' : r.app || '–'}</td>
+      <td style="font-size:11px;color:var(--dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.user_agent||'').replace(/"/g,"'")}">
+        ${r.fehler ? `<span style="color:#dc2626">${r.fehler}</span>` : (r.user_agent || '').replace(/^Mozilla.*?(\w+\/[\d.]+)\s.*$/, '$1') || '–'}
+      </td>
+    </tr>`).join('');
+
+    const table = `<div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>Zeitpunkt</th><th>E-Mail</th><th>Aktion</th><th>App</th><th>Details</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table></div>`;
+
+    document.getElementById('tableContainer').innerHTML = kpi + table;
+    document.getElementById('rowCount').textContent = ` · ${rows.length} Einträge`;
+  } catch(e) {
+    document.getElementById('tableContainer').innerHTML =
+      `<div style="padding:32px;text-align:center;color:var(--dim)">Fehler beim Laden: ${e.message}</div>`;
+  }
 }
 
 // ── PASSWORT ÄNDERN ──────────────────────────────────────────
