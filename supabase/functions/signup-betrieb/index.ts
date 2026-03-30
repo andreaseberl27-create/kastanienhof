@@ -78,30 +78,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Passwort muss mindestens 8 Zeichen haben.' }, { status: 400, headers: corsHeaders });
     }
 
-    const anonClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-    );
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // 1. Auth-User anlegen (löst Bestätigungsmail aus)
-    const { data: signUpData, error: signUpError } = await anonClient.auth.signUp({
+    // 1. Auth-User per Admin-API anlegen (User ist sofort in auth.users vorhanden)
+    const { data: createData, error: signUpError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: 'https://ripelog.com/admin.html',
-        data: { betrieb_name: betriebName },
-      },
+      email_confirm: false,
+      user_metadata: { betrieb_name: betriebName },
     });
 
     if (signUpError) {
       return Response.json({ error: signUpError.message }, { status: 400, headers: corsHeaders });
     }
 
-    const userId = signUpData.user!.id;
+    const userId = createData.user.id;
 
     // 2. Betrieb anlegen
     const { data: betrieb, error: betriebError } = await adminClient
@@ -128,6 +122,13 @@ Deno.serve(async (req) => {
 
     // 4. Demo-Daten einfügen (Fehler hier nicht kritisch)
     await seedDemoData(adminClient, betrieb.id);
+
+    // 5. Bestätigungsmail senden
+    await adminClient.auth.admin.generateLink({
+      type: 'signup',
+      email,
+      options: { redirectTo: Deno.env.get('APP_URL') + '/admin.html' },
+    });
 
     return Response.json({
       ok: true,
