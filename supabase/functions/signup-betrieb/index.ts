@@ -19,16 +19,13 @@ async function seedDemoData(adminClient: ReturnType<typeof createClient>, betrie
   const birnenId   = fruchtarten?.find(f => f.name === 'Birnen')?.id;
   const kirschenId = fruchtarten?.find(f => f.name === 'Kirschen')?.id;
 
-  // 2. Sorten
+  // 2. Sorten (max. 5 – passt ins kostenlose Kontingent)
   await adminClient.from('sorten').insert([
-    { betrieb_id: betriebId, name: 'Elstar',      fruchtart_id: aepfelId,   aktiv: true },
-    { betrieb_id: betriebId, name: 'Gala',        fruchtart_id: aepfelId,   aktiv: true },
-    { betrieb_id: betriebId, name: 'Jonagold',    fruchtart_id: aepfelId,   aktiv: true },
-    { betrieb_id: betriebId, name: 'Boskoop',     fruchtart_id: aepfelId,   aktiv: true },
-    { betrieb_id: betriebId, name: 'Williams',    fruchtart_id: birnenId,   aktiv: true },
-    { betrieb_id: betriebId, name: 'Conference',  fruchtart_id: birnenId,   aktiv: true },
-    { betrieb_id: betriebId, name: 'Kordia',      fruchtart_id: kirschenId, aktiv: true },
-    { betrieb_id: betriebId, name: 'Regina',      fruchtart_id: kirschenId, aktiv: true },
+    { betrieb_id: betriebId, name: 'Elstar',     fruchtart_id: aepfelId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Gala',       fruchtart_id: aepfelId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Williams',   fruchtart_id: birnenId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Conference', fruchtart_id: birnenId,   aktiv: true },
+    { betrieb_id: betriebId, name: 'Kordia',     fruchtart_id: kirschenId, aktiv: true },
   ]);
 
   // 3. Felder
@@ -124,10 +121,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: memberError.message }, { status: 500, headers: corsHeaders });
     }
 
-    // 4. Demo-Daten einfügen (Fehler hier nicht kritisch)
+    // 4. FREE-Lizenz anlegen
+    await adminClient.from('lizenzen').insert({ betrieb_id: betrieb.id, stufe: 'free' });
+
+    // 5. Demo-Daten einfügen (Fehler hier nicht kritisch)
     await seedDemoData(adminClient, betrieb.id);
 
-    // 5. Bestätigungsmail senden (resend schickt die Mail an den unbestätigten User)
+    // 6. Bestätigungsmail senden (resend schickt die Mail an den unbestätigten User)
     await anonClient.auth.resend({
       type: 'signup',
       email,

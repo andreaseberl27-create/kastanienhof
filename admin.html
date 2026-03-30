@@ -414,6 +414,11 @@ tbody tr:hover { background:#faf6ee; }
           data-tip="Etikettenformat und weitere Betriebseinstellungen">
           <span class="icon">⚙️</span> Konfiguration
         </div>
+        <div class="nav-item" id="nav-lizenz" onclick="navigate('lizenz')"
+          data-tip="Lizenzplan ansehen · PRO-Lizenz anfragen">
+          <span class="icon">⚡</span> Lizenz
+          <span id="lizenzPlanBadge" style="margin-left:auto;font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,.12);color:var(--sidebar-dim)"></span>
+        </div>
       </nav>
       <div class="sidebar-user">
         <div style="font-size:11px;color:var(--sidebar-dim);margin-bottom:2px" id="sidebarBetrieb"></div>
@@ -558,6 +563,23 @@ tbody tr:hover { background:#faf6ee; }
   </div>
 </div>
 
+<!-- ── Upgrade Prompt Modal ── -->
+<div class="overlay hidden" id="upgradeOverlay" onclick="if(event.target===this)closeUpgradePrompt()">
+  <div class="modal-card" style="max-width:420px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div class="modal-title" style="margin-bottom:10px">Limit erreicht</div>
+    <div style="font-size:14px;color:var(--dim);margin-bottom:24px;line-height:1.7">
+      Im kostenlosen Plan können maximal <strong><span id="upgradeMsgLimit"></span></strong>
+      <strong><span id="upgradeMsgSection"></span></strong> angelegt werden.<br>
+      Fordern Sie die <strong>PRO-Lizenz</strong> an, um unbegrenzt zu arbeiten.
+    </div>
+    <div class="modal-btns" style="justify-content:center">
+      <button class="btn-cancel" onclick="closeUpgradePrompt()">Schließen</button>
+      <button class="btn-save" onclick="closeUpgradePrompt();navigate('lizenz')">PRO anfragen →</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Print area (only visible during print) ── -->
 <div id="printArea">
   <div class="label-sheet" id="labelSheet"></div>
@@ -577,6 +599,16 @@ let qrStartNr  = 1;
 let currentUserRole = null;
 let currentUserId = null;
 let currentBetriebId = null;
+let currentLizenz = 'free';
+
+// ── LIZENZ-KONFIGURATION ─────────────────────────────────────
+// Limits je Lizenzstufe – neue Stufen hier ergänzen
+const LIZENZ_LIMITS = {
+  free: { mitarbeiter: 5, felder: 5, sorten: 5, gebinde: 5 },
+  pro:  { mitarbeiter: Infinity, felder: Infinity, sorten: Infinity, gebinde: Infinity },
+};
+const LIZENZ_LABELS = { free: 'Kostenlos', pro: 'PRO' };
+const LIZENZ_LIMITED_SECTIONS = ['mitarbeiter', 'felder', 'sorten', 'gebinde'];
 
 const cache = { mitarbeiter:[], betriebsleiter:[], felder:[], fruchtarten:[], sorten:[], qualitaeten:[], gebinde:[] };
 
@@ -591,7 +623,8 @@ const SECTION_CONFIG = {
   protokoll:    { table:'ernteeintraege', label:'Protokoll',  order:'datum', special:true },
   auswertung:   { table:'ernteeintraege', label:'Auswertung', order:'datum', special:true },
   anmeldungen:  { table:'activity_log',   label:'Anmeldungen', order:'created_at', special:true },
-  konfiguration:   { table:null, label:'Konfiguration', order:null }
+  konfiguration:   { table:null, label:'Konfiguration', order:null },
+  lizenz:          { table:null, label:'Lizenz',        order:null },
 };
 
 // ── SUPABASE HELPERS ─────────────────────────────────────────
@@ -714,6 +747,15 @@ async function showApp(username) {
     const me = await sbGet('betrieb_mitglieder', `username=eq.${encodeURIComponent(username)}&select=betrieb_id,rolle,user_id`);
     if (me.length) { currentUserRole = me[0].rolle; currentUserId = me[0].user_id; currentBetriebId = me[0].betrieb_id; }
   } catch {}
+  // Lizenz laden
+  if (currentBetriebId) {
+    try {
+      const lizRows = await sbGet('lizenzen', `betrieb_id=eq.${currentBetriebId}&order=erstellt_am.desc&limit=1&select=stufe`);
+      currentLizenz = lizRows.length ? lizRows[0].stufe : 'free';
+    } catch { currentLizenz = 'free'; }
+    const badge = document.getElementById('lizenzPlanBadge');
+    if (badge) badge.textContent = LIZENZ_LABELS[currentLizenz] || currentLizenz;
+  }
   const roleEl = document.getElementById('sidebarRole');
   if (roleEl) roleEl.textContent = currentUserRole === 'admin' ? '★ Admin' : '● Betriebsleiter';
   // Betriebsname laden und anzeigen
@@ -763,6 +805,8 @@ async function navigate(section) {
     addBtn.style.display = 'none';
   } else if (section === 'konfiguration') {
     addBtn.style.display = 'none';
+  } else if (section === 'lizenz') {
+    addBtn.style.display = 'none';
   } else {
     // Nur Admin darf neue Betriebsleiter anlegen
     addBtn.style.display = (section === 'betriebsleiter' && currentUserRole !== 'admin') ? 'none' : '';
@@ -771,7 +815,8 @@ async function navigate(section) {
 }
 
 async function loadSection(section) {
-  if (section === 'konfiguration') { renderKonfiguration(); return; }
+  if (section === 'lizenz')        { await renderLizenz();   return; }
+  if (section === 'konfiguration') { renderKonfiguration();  return; }
   if (section === 'auswertung')  { await loadAuswertung();   return; }
   if (section === 'protokoll')   { await initProtokoll();    return; }
   if (section === 'anmeldungen') { await loadActivityLog();  return; }
@@ -1250,6 +1295,15 @@ function getFormHTML(section, r) {
 }
 
 function openAdd() {
+  // Lizenz-Limit prüfen
+  if (LIZENZ_LIMITED_SECTIONS.includes(currentSection)) {
+    const limits = LIZENZ_LIMITS[currentLizenz] || LIZENZ_LIMITS.free;
+    const limit  = limits[currentSection];
+    if (typeof limit === 'number' && isFinite(limit) && cache[currentSection].length >= limit) {
+      showUpgradePrompt(currentSection);
+      return;
+    }
+  }
   editId = null;
   const label = currentSection === 'betriebsleiter' ? 'Neuen Betriebsleiter anlegen' :
     SECTION_CONFIG[currentSection].label + ' anlegen';
@@ -2092,6 +2146,137 @@ async function saveChangePassword() {
     alert('Passwort erfolgreich geändert.');
   } catch(e) {
     alert('Fehler: ' + e.message);
+  }
+}
+
+// ── LIZENZ ───────────────────────────────────────────────────
+async function renderLizenz() {
+  const rc = document.getElementById('rowCount');
+  if (rc) rc.textContent = '';
+
+  const limits   = LIZENZ_LIMITS[currentLizenz] || LIZENZ_LIMITS.free;
+  const isPro    = currentLizenz !== 'free';
+  const planLabel = LIZENZ_LABELS[currentLizenz] || currentLizenz;
+
+  const sectionMeta = [
+    { key:'mitarbeiter', label:'Pflücker',   table:'pfluecker' },
+    { key:'felder',      label:'Feldstücke', table:'felder' },
+    { key:'sorten',      label:'Sorten',     table:'sorten' },
+    { key:'gebinde',     label:'Gebinde',    table:'gebinde' },
+  ];
+
+  // Aktuelle Anzahlen aus Supabase laden
+  const counts = {};
+  for (const m of sectionMeta) {
+    try {
+      const rows = await sbGet(m.table, 'select=id');
+      counts[m.key] = rows.length;
+    } catch { counts[m.key] = '?'; }
+  }
+
+  const limitRows = sectionMeta.map(({ key, label }) => {
+    const lim     = limits[key];
+    const cnt     = counts[key];
+    const atLimit = isFinite(lim) && typeof cnt === 'number' && cnt >= lim;
+    const limCell = !isFinite(lim)
+      ? '<span style="color:var(--green)">Unbegrenzt</span>'
+      : atLimit
+        ? `<span style="color:var(--red);font-weight:600">${lim} — Limit erreicht</span>`
+        : String(lim);
+    return `<tr><td>${label}</td><td>${cnt}</td><td>${limCell}</td></tr>`;
+  }).join('');
+
+  const upgradeSection = isPro
+    ? `<div style="margin-top:24px;padding:16px 20px;background:#f0fdf4;border-radius:10px;border:1px solid rgba(45,90,39,.18)">
+        <div style="font-size:14px;font-weight:600;color:var(--green)">✓ PRO-Lizenz aktiv</div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px">Alle Bereiche sind ohne Einschränkungen nutzbar.</div>
+       </div>`
+    : `<div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">PRO-Lizenz anfragen</div>
+        <div style="font-size:13px;color:var(--dim);margin-bottom:20px;line-height:1.6">
+          Mit der PRO-Lizenz nutzen Sie alle Bereiche ohne Einschränkungen.<br>
+          Füllen Sie das Formular aus – wir schalten Ihren Betrieb umgehend frei.
+        </div>
+        <div class="modal-grid" style="grid-template-columns:1fr 1fr">
+          <div><label class="form-label">Ihr Name</label>
+            <input class="form-input" id="liz_name" placeholder="Max Mustermann"></div>
+          <div><label class="form-label">E-Mail *</label>
+            <input class="form-input" id="liz_email" type="email" placeholder="ihre@email.de"></div>
+          <div class="full"><label class="form-label">Nachricht (optional)</label>
+            <textarea class="form-input" id="liz_nachricht" rows="3" style="resize:vertical"
+              placeholder="z.B. Anzahl Mitarbeiter, Betriebsgröße …"></textarea></div>
+        </div>
+        <button class="btn-add" style="margin-top:16px" onclick="submitLizenzAnfrage()">PRO-Lizenz anfragen →</button>
+        <div id="lizAnfrageStatus" style="margin-top:10px;font-size:13px;min-height:18px"></div>
+       </div>`;
+
+  document.getElementById('tableContainer').innerHTML = `
+  <div style="max-width:560px;padding:8px 0">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+      <div style="font-size:18px;font-weight:700;font-family:'Syne',sans-serif">Ihr aktueller Plan</div>
+      <span style="padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;
+        ${isPro ? 'background:var(--green);color:#fff' : 'background:rgba(45,90,39,.10);color:var(--green)'}">
+        ${isPro ? '★ ' : ''}${planLabel}
+      </span>
+    </div>
+    <table>
+      <thead><tr><th>Bereich</th><th>Angelegt</th><th>Limit</th></tr></thead>
+      <tbody>${limitRows}</tbody>
+    </table>
+    ${upgradeSection}
+  </div>`;
+
+  // E-Mail aus Session vorausfüllen
+  if (!isPro) {
+    const saved = JSON.parse(localStorage.getItem('admin_session') || '{}');
+    const emailEl = document.getElementById('liz_email');
+    if (emailEl && saved.username) emailEl.value = saved.username;
+  }
+}
+
+function showUpgradePrompt(section) {
+  const labels = { mitarbeiter:'Pflücker', felder:'Feldstücke', sorten:'Sorten', gebinde:'Gebinde' };
+  const limits = LIZENZ_LIMITS[currentLizenz] || LIZENZ_LIMITS.free;
+  document.getElementById('upgradeMsgSection').textContent = labels[section] || section;
+  document.getElementById('upgradeMsgLimit').textContent   = limits[section];
+  document.getElementById('upgradeOverlay').classList.remove('hidden');
+}
+
+function closeUpgradePrompt() {
+  document.getElementById('upgradeOverlay').classList.add('hidden');
+}
+
+async function submitLizenzAnfrage() {
+  const name      = (document.getElementById('liz_name')?.value      || '').trim();
+  const email     = (document.getElementById('liz_email')?.value     || '').trim();
+  const nachricht = (document.getElementById('liz_nachricht')?.value || '').trim();
+  const statusEl  = document.getElementById('lizAnfrageStatus');
+
+  if (!email) {
+    if (statusEl) { statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Bitte E-Mail angeben.'; }
+    return;
+  }
+
+  try {
+    const betriebe = await sbGet('betriebe', 'select=name&limit=1');
+    await sbPost('lizenz_anfragen', {
+      betrieb_id:        currentBetriebId,
+      betrieb_name:      betriebe[0]?.name || null,
+      kontakt_email:     email,
+      kontakt_name:      name || null,
+      gewuenschte_stufe: 'pro',
+      nachricht:         nachricht || null,
+    });
+    if (statusEl) {
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = '✓ Anfrage gesendet – wir melden uns so schnell wie möglich bei Ihnen.';
+    }
+    ['liz_name','liz_email','liz_nachricht'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Fehler: ' + e.message; }
   }
 }
 
