@@ -63,7 +63,6 @@ async function init() {
   updateContextStrip();
   renderRecentScans();
   updateSummary();
-  updateLoginHint();
   await checkAuth();
 }
 
