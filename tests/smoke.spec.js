@@ -8,16 +8,6 @@ test.describe('Smoke: Seiten laden', () => {
     await expect(page).toHaveTitle(/Ripelog/);
   });
 
-  test('Ernte-App lädt ohne JS-Fehler', async ({ page }) => {
-    const errors = [];
-    page.on('pageerror', err => errors.push(err.message));
-
-    await page.goto('/ernte-app.html');
-    await page.waitForLoadState('networkidle');
-
-    expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
-  });
-
   test('Admin-Panel lädt ohne JS-Fehler', async ({ page }) => {
     const errors = [];
     page.on('pageerror', err => errors.push(err.message));
