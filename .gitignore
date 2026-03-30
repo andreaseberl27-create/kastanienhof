@@ -1,1 +1,10 @@
 .mcp.json
+
+# Local Netlify folder
+.netlify
+
+# Playwright
+tests/node_modules/
+tests/test-report/
+tests/playwright-report/
+tests/test-results/
