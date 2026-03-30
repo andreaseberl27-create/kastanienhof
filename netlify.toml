@@ -18,9 +18,9 @@
   command = "bash build.sh && cd tests && npm ci && npx playwright install chromium && npx playwright test --reporter=line"
 
 [context.branch-deploy.environment]
-  SENTRY_ENV      = "develop"
-  RELEASE_VERSION = "ripelog@develop"
+  SENTRY_ENV           = "develop"
+  RELEASE_VERSION      = "ripelog@develop"
+  PLAYWRIGHT_BASE_URL  = "https://develop--ripelog.netlify.app"
   # SUPABASE_URL, SUPABASE_KEY → INT-Projekt-Werte in Netlify UI gesetzt
   # SENTRY_DSN → selbes DSN wie prod, nur environment-Tag wechselt
-  # PLAYWRIGHT_BASE_URL → stabile INT-URL, in Netlify UI gesetzt
-  # TEST_EMAIL / TEST_PASSWORD → in Netlify UI gesetzt
+  # TEST_EMAIL / TEST_PASSWORD → in Netlify UI gesetzt (Fallback: andi_eberl@gmx.de / testtest)
