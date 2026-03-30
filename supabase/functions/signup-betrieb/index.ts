@@ -82,6 +82,10 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+    const anonClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+    );
 
     // 1. Auth-User per Admin-API anlegen (User ist sofort in auth.users vorhanden)
     const { data: createData, error: signUpError } = await adminClient.auth.admin.createUser({
@@ -123,11 +127,11 @@ Deno.serve(async (req) => {
     // 4. Demo-Daten einfügen (Fehler hier nicht kritisch)
     await seedDemoData(adminClient, betrieb.id);
 
-    // 5. Bestätigungsmail senden
-    await adminClient.auth.admin.generateLink({
+    // 5. Bestätigungsmail senden (resend schickt die Mail an den unbestätigten User)
+    await anonClient.auth.resend({
       type: 'signup',
       email,
-      options: { redirectTo: Deno.env.get('APP_URL') + '/admin.html' },
+      options: { emailRedirectTo: Deno.env.get('APP_URL') + '/admin.html' },
     });
 
     return Response.json({
