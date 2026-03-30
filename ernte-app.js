@@ -56,7 +56,8 @@ function showPage(name) {
 
 async function init() {
   const ds = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
-  document.getElementById('dateBadge').textContent = ds;
+  const dateBadge = document.getElementById('dateBadge');
+  if (dateBadge) dateBadge.textContent = ds;
   document.getElementById('statDateBadge').textContent = ds;
 
   updateContextStrip();
