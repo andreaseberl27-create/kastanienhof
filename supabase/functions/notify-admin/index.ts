@@ -1,4 +1,4 @@
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+import { SMTPClient } from 'denomailer/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
