@@ -36,8 +36,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: dbError.message }, { status: 500, headers: corsHeaders });
     }
 
-    // 2. Admin benachrichtigen (server-zu-server)
-    fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-admin`, {
+    // 2. Admin benachrichtigen (awaited – fire-and-forget würde von Deno abgebrochen)
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-admin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': Deno.env.get('SUPABASE_ANON_KEY')! },
       body: JSON.stringify({
