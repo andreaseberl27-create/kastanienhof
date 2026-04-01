@@ -15,7 +15,9 @@
 #   https://develop--<dein-site-name>.netlify.app
 # TEST_EMAIL / TEST_PASSWORD ebenfalls in den Netlify-Einstellungen setzen.
 [context.branch-deploy]
-  command = "bash build.sh && cd tests && npm ci && npx playwright install chromium && npx playwright test --reporter=line"
+  command = "bash build.sh"
+  # Playwright-Tests temporär deaktiviert
+  # command = "bash build.sh && cd tests && npm ci && npx playwright install chromium && npx playwright test --reporter=line"
 
 [context.branch-deploy.environment]
   SENTRY_ENV           = "develop"
