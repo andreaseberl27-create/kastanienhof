@@ -22,6 +22,9 @@
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
       "Bash(wc -l /c/Users/andi_/OneDrive/Dokumente/coding/kastanienhof/*.html /c/Users/andi_/OneDrive/Dokumente/coding/kastanienhof/*.js /c/Users/andi_/OneDrive/Dokumente/coding/kastanienhof/*.css)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\andi_\\OneDrive\\Dokumente\\coding\\kastanienhof\\supabase\\functions"
     ]
   }
 }

@@ -124,10 +124,23 @@ Deno.serve(async (req) => {
     // 4. FREE-Lizenz anlegen
     await adminClient.from('lizenzen').insert({ betrieb_id: betrieb.id, stufe: 'free' });
 
-    // 5. Demo-Daten einfügen (Fehler hier nicht kritisch)
+    // 5. Admin-Benachrichtigung (fire & forget)
+    fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-admin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
+      },
+      body: JSON.stringify({
+        subject: `[Ripelog] Neuer Betrieb: ${betriebName}`,
+        html: `<p><strong>Betrieb:</strong> ${betriebName}</p><p><strong>E-Mail:</strong> ${email}</p>`,
+      }),
+    }).catch(() => {});
+
+    // 7. Demo-Daten einfügen (Fehler hier nicht kritisch)
     await seedDemoData(adminClient, betrieb.id);
 
-    // 6. Bestätigungsmail senden (resend schickt die Mail an den unbestätigten User)
+    // 8. Bestätigungsmail senden (resend schickt die Mail an den unbestätigten User)
     await anonClient.auth.resend({
       type: 'signup',
       email,

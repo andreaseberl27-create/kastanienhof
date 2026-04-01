@@ -2267,6 +2267,20 @@ async function submitLizenzAnfrage() {
       gewuenschte_stufe: 'pro',
       nachricht:         nachricht || null,
     });
+
+    // Admin-Benachrichtigung (fire & forget – Fehler nicht an User weitergeben)
+    fetch(`${SUPABASE_URL}/functions/v1/notify-admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({
+        subject: `[Ripelog] PRO-Anfrage von ${betriebe[0]?.name || email}`,
+        html: `<p><strong>Betrieb:</strong> ${betriebe[0]?.name || '–'}</p>
+               <p><strong>Name:</strong> ${name || '–'}</p>
+               <p><strong>E-Mail:</strong> ${email}</p>
+               <p><strong>Nachricht:</strong> ${nachricht || '–'}</p>`,
+      }),
+    }).catch(() => {});
+
     if (statusEl) {
       statusEl.style.color = 'var(--green)';
       statusEl.textContent = '✓ Anfrage gesendet – wir melden uns so schnell wie möglich bei Ihnen.';
