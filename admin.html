@@ -2307,27 +2307,19 @@ async function submitLizenzAnfrage() {
 
   try {
     const betriebe = await sbGet('betriebe', 'select=name&limit=1');
-    await sbPost('lizenz_anfragen', {
-      betrieb_id:        currentBetriebId,
-      betrieb_name:      betriebe[0]?.name || null,
-      kontakt_email:     email,
-      kontakt_name:      name || null,
-      gewuenschte_stufe: 'pro',
-      nachricht:         nachricht || null,
-    });
-
-    // Admin-Benachrichtigung
-    fetch(`${SUPABASE_URL}/functions/v1/notify-admin`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-lizenz-anfrage`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        subject: `[Ripelog] PRO-Anfrage von ${betriebe[0]?.name || email}`,
-        html: `<p><strong>Betrieb:</strong> ${betriebe[0]?.name || '–'}</p>
-               <p><strong>Name:</strong> ${name || '–'}</p>
-               <p><strong>E-Mail:</strong> ${email}</p>
-               <p><strong>Nachricht:</strong> ${nachricht || '–'}</p>`,
+        betrieb_id:   currentBetriebId,
+        betrieb_name: betriebe[0]?.name || null,
+        kontakt_email: email,
+        kontakt_name:  name || null,
+        nachricht:     nachricht || null,
       }),
-    }).then(r => r.json()).then(d => { if (d.error) console.error('notify-admin:', d.error); }).catch(e => console.error('notify-admin:', e));
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Fehler ${res.status}`);
 
     if (statusEl) {
       statusEl.style.color = 'var(--green)';
