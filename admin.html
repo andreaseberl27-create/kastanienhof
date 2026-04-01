@@ -2269,9 +2269,9 @@ async function submitLizenzAnfrage() {
     });
 
     // Admin-Benachrichtigung (fire & forget – Fehler nicht an User weitergeben)
-    fetch(`${SUPABASE_URL}/functions/v1/notify-admin`, {
+    fetch(`${SB_URL}/functions/v1/notify-admin`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY },
       body: JSON.stringify({
         subject: `[Ripelog] PRO-Anfrage von ${betriebe[0]?.name || email}`,
         html: `<p><strong>Betrieb:</strong> ${betriebe[0]?.name || '–'}</p>
