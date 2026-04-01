@@ -340,7 +340,7 @@ tbody tr:hover { background:#faf6ee; }
 .proto-del-btn { color:var(--red) !important; border-color:transparent; }
 .proto-del-btn:hover { background:#fee2e2 !important; border-color:var(--red) !important; }
 </style>
-<script src="/config.js"></script>
+<script src="config.js"></script>
 <script src="https://browser.sentry-cdn.com/8.38.0/bundle.min.js" crossorigin="anonymous"></script>
 <script>Sentry.init({ dsn: window.RIPELOG_CONFIG.sentryDsn, environment: window.RIPELOG_CONFIG.sentryEnv, release: window.RIPELOG_CONFIG.release });</script>
 </head>
@@ -365,6 +365,19 @@ tbody tr:hover { background:#faf6ee; }
     </div>
     <button class="btn-primary" id="loginBtn" onclick="login()">Anmelden</button>
     <div class="login-error" id="loginErr"></div>
+    <div id="resetSection" style="margin-top:14px;text-align:center">
+      <a href="#" onclick="toggleReset();return false;"
+         style="font-size:12px;color:var(--dim);text-decoration:none">
+        Passwort vergessen?
+      </a>
+      <div id="resetForm" style="display:none;margin-top:12px">
+        <input class="form-input" id="resetEmail" type="email" placeholder="ihre@email.de"
+               style="margin-bottom:8px">
+        <button class="btn-primary" id="resetBtn" onclick="sendReset()"
+                style="font-size:13px;padding:10px">Link anfordern</button>
+        <div id="resetMsg" style="font-size:12px;min-height:16px;margin-top:8px"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -587,8 +600,8 @@ tbody tr:hover { background:#faf6ee; }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-const SB_URL    = window.RIPELOG_CONFIG.supabaseUrl;
-const SB_KEY    = window.RIPELOG_CONFIG.supabaseKey;
+const SUPABASE_URL = window.RIPELOG_CONFIG.supabaseUrl;
+const SUPABASE_KEY = window.RIPELOG_CONFIG.supabaseKey;
 
 // ── STATE ────────────────────────────────────────────────────
 let session = null;
@@ -629,16 +642,16 @@ const SECTION_CONFIG = {
 
 // ── SUPABASE HELPERS ─────────────────────────────────────────
 function sbHeaders() {
-  const token = session?.access_token || SB_KEY;
-  return { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const token = session?.access_token || SUPABASE_KEY;
+  return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 async function sbGet(table, qs='') {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, { headers: sbHeaders() });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${qs}`, { headers: sbHeaders() });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 async function sbPost(table, data) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method:'POST', headers:{ ...sbHeaders(), 'Prefer':'return=representation' },
     body: JSON.stringify(data)
   });
@@ -646,14 +659,14 @@ async function sbPost(table, data) {
   return r.json();
 }
 async function sbPatch(table, id, data) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method:'PATCH', headers:{ ...sbHeaders(), 'Prefer':'return=minimal' },
     body: JSON.stringify(data)
   });
   if (!r.ok) throw new Error(await r.text());
 }
 async function sbDelete(table, id) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method:'DELETE', headers: sbHeaders()
   });
   if (!r.ok) throw new Error(await r.text());
@@ -664,9 +677,9 @@ async function logActivity(aktion, email, userId, fehler = null) {
   try {
     const token = session?.access_token;
     if (!token) return;
-    await fetch(`${SB_URL}/rest/v1/activity_log`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({
         user_id:    userId  || null,
         betrieb_id: currentBetriebId || null,
@@ -689,9 +702,9 @@ async function login() {
   if (!username || !password) { errEl.textContent = 'Alle Felder ausfüllen.'; return; }
   btn.textContent = 'Anmelden…'; btn.disabled = true;
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: username, password })
     });
     const data = await res.json();
@@ -709,11 +722,46 @@ async function login() {
     btn.textContent = 'Anmelden'; btn.disabled = false;
   }
 }
+function toggleReset() {
+  const form = document.getElementById('resetForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form.style.display === 'block') {
+    const email = document.getElementById('loginUser').value;
+    if (email) document.getElementById('resetEmail').value = email;
+    document.getElementById('resetEmail').focus();
+  }
+}
+
+async function sendReset() {
+  const email = document.getElementById('resetEmail').value.trim().toLowerCase();
+  const msgEl = document.getElementById('resetMsg');
+  const btn   = document.getElementById('resetBtn');
+  msgEl.style.color = 'var(--dim)';
+  msgEl.textContent = '';
+  if (!email) { msgEl.style.color = 'var(--red)'; msgEl.textContent = 'Bitte E-Mail eingeben.'; return; }
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    // Immer Erfolg anzeigen (verhindert User-Enumeration)
+    msgEl.style.color = 'var(--green)';
+    msgEl.textContent = '✓ Falls ein Konto existiert, wurde ein Link gesendet.';
+  } catch {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Fehler beim Senden. Bitte erneut versuchen.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Link anfordern';
+  }
+}
+
 async function logout() {
   if (!confirm('Abmelden?')) return;
   const saved = JSON.parse(localStorage.getItem('admin_session') || 'null');
   await logActivity('logout', saved?.username, saved?.user_id);
-  try { await fetch(`${SB_URL}/auth/v1/logout`, { method:'POST', headers:sbHeaders() }); } catch {}
+  try { await fetch(`${SUPABASE_URL}/auth/v1/logout`, { method:'POST', headers:sbHeaders() }); } catch {}
   if (typeof Sentry !== 'undefined') Sentry.setUser(null);
   session = null;
   currentUserRole = null;
@@ -727,8 +775,8 @@ async function checkAuth() {
   const saved = JSON.parse(localStorage.getItem('admin_session') || 'null');
   if (!saved?.access_token) return;
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
-      method:'POST', headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST', headers:{ 'apikey':SUPABASE_KEY, 'Content-Type':'application/json' },
       body: JSON.stringify({ refresh_token: saved.refresh_token })
     });
     if (!res.ok) throw new Error();
@@ -1416,9 +1464,9 @@ async function saveBetriebsleiter() {
   if (password.length < 6) { alert('Passwort mindestens 6 Zeichen.'); return; }
   try {
     // 1. Auth-User anlegen
-    const res = await fetch(`${SB_URL}/auth/v1/signup`, {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: username, password })
     });
     const data = await res.json();
@@ -1428,7 +1476,7 @@ async function saveBetriebsleiter() {
     // 2. Betrieb-ID holen und User zuordnen
     const betriebe = await sbGet('betriebe', 'select=id&limit=1');
     if (!betriebe.length) throw new Error('Kein Betrieb gefunden');
-    await fetch(`${SB_URL}/rest/v1/betrieb_mitglieder`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/betrieb_mitglieder`, {
       method: 'POST',
       headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
       body: JSON.stringify({ betrieb_id: betriebe[0].id, user_id: userId, username, rolle: 'betriebsleiter' })
@@ -1443,7 +1491,7 @@ async function saveBetriebsleiter() {
 async function delBetriebsleiter(userId) {
   if (!confirm('Betriebsleiter wirklich entfernen?')) return;
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/betrieb_mitglieder?user_id=eq.${userId}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/betrieb_mitglieder?user_id=eq.${userId}`, {
       method: 'DELETE', headers: sbHeaders()
     });
     if (!r.ok) throw new Error(await r.text());
@@ -1602,7 +1650,7 @@ async function printLabels() {
     betrieb_id: currentBetriebId
   }));
   try {
-    await fetch(`${SB_URL}/rest/v1/etiketten`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/etiketten`, {
       method: 'POST',
       headers: { ...sbHeaders(), 'Prefer': 'return=minimal,resolution=ignore-duplicates' },
       body: JSON.stringify(rows)
@@ -2136,9 +2184,9 @@ async function saveChangePassword() {
   if (pw1.length < 6) { alert('Passwort mindestens 6 Zeichen.'); return; }
   if (pw1 !== pw2) { alert('Passwörter stimmen nicht überein.'); return; }
   try {
-    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       method: 'PUT',
-      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: pw1 })
     });
     if (!res.ok) { const d = await res.json(); throw new Error(d.error_description || d.msg || 'Fehler'); }
@@ -2268,10 +2316,10 @@ async function submitLizenzAnfrage() {
       nachricht:         nachricht || null,
     });
 
-    // Admin-Benachrichtigung (fire & forget – Fehler nicht an User weitergeben)
-    fetch(`${SB_URL}/functions/v1/notify-admin`, {
+    // Admin-Benachrichtigung
+    fetch(`${SUPABASE_URL}/functions/v1/notify-admin`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY },
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
       body: JSON.stringify({
         subject: `[Ripelog] PRO-Anfrage von ${betriebe[0]?.name || email}`,
         html: `<p><strong>Betrieb:</strong> ${betriebe[0]?.name || '–'}</p>
@@ -2279,7 +2327,7 @@ async function submitLizenzAnfrage() {
                <p><strong>E-Mail:</strong> ${email}</p>
                <p><strong>Nachricht:</strong> ${nachricht || '–'}</p>`,
       }),
-    }).catch(() => {});
+    }).then(r => r.json()).then(d => { if (d.error) console.error('notify-admin:', d.error); }).catch(e => console.error('notify-admin:', e));
 
     if (statusEl) {
       statusEl.style.color = 'var(--green)';

@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
     const client = new SMTPClient({
       connection: {
         hostname: Deno.env.get('SMTP_HOST')!,
-        port: Number(Deno.env.get('SMTP_PORT') ?? 465),
-        tls: true,
+        port: 587,
+        tls: false,
         auth: {
           username: Deno.env.get('SMTP_USER')!,
           password: Deno.env.get('SMTP_PASS')!,
@@ -29,15 +29,24 @@ Deno.serve(async (req) => {
       },
     });
 
-    await client.send({
-      from: Deno.env.get('SMTP_FROM')!,
-      to: Deno.env.get('NOTIFY_TO')!,
-      subject,
-      content: text ?? '',
-      html: html ?? '',
-    });
-
-    await client.close();
+    try {
+      await client.send({
+        from: Deno.env.get('SMTP_FROM')!,
+        to: Deno.env.get('NOTIFY_TO')!,
+        subject,
+        content: text ?? '',
+        html: html ?? '',
+      });
+    } catch (sendErr: unknown) {
+      const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+      // denomailer wirft BadResource/connection not recoverable beim Verbindungsabbau,
+      // obwohl die Mail bereits gesendet wurde – diese Fehler ignorieren
+      if (!msg.includes('BadResource') && !msg.includes('connection not recoverable')) {
+        throw sendErr;
+      }
+      console.log('notify-admin: mail sent, ignoring close error:', msg);
+    }
+    try { await client.close(); } catch { /* ignorieren */ }
 
     return Response.json({ ok: true }, { headers: corsHeaders });
 
